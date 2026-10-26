@@ -77,3 +77,4 @@ export function StudentNavbar({ userName }: StudentNavbarProps) {
     </header>
   );
 }
+

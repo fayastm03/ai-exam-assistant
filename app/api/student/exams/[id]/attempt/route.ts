@@ -110,3 +110,4 @@ export async function GET(request: NextRequest, context: RouteContext) {
     serverTime: new Date().toISOString(),
   });
 }
+

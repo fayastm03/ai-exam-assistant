@@ -8,3 +8,4 @@ export const saveAnswerSchema = z.object({
 export const submitExamSchema = z.object({
   autoSubmitted: z.boolean().optional().default(false),
 });
+

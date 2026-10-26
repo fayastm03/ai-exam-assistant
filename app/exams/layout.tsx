@@ -1,6 +1,7 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
+import { connection } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { StudentNavbar } from '@/components/student/student-navbar';
@@ -12,6 +13,7 @@ export default async function StudentLayout({
 }: {
   children: React.ReactNode;
 }) {
+  await connection();
   const cookieStore = await cookies();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey =
@@ -54,3 +56,4 @@ export default async function StudentLayout({
     </div>
   );
 }
+

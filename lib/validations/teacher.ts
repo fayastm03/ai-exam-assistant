@@ -5,7 +5,7 @@ import { z } from 'zod';
  */
 export const optionItemSchema = z.object({
   id: z.string().trim().min(1, 'Option id is required'),
-  text: z.string().trim().min(1, 'Option text is required'),
+  text: z.string().trim().min(1, 'Option text is required').max(2000, 'Option text cannot exceed 2,000 characters'),
 });
 
 export const examCreateSchema = z
@@ -73,7 +73,7 @@ export const examUpdateSchema = z
 export const questionCreateSchema = z
   .object({
     number: z.number().int().positive().optional(),
-    text: z.string().trim().min(1, 'Question text is required'),
+    text: z.string().trim().min(1, 'Question text is required').max(10000, 'Question text cannot exceed 10,000 characters'),
     options: z.union([
       z.array(optionItemSchema).min(2, 'Must provide at least 2 options'),
       z.record(z.string(), z.string()).refine(
@@ -86,8 +86,8 @@ export const questionCreateSchema = z
       .number({ message: 'marks must be a number' })
       .positive('Marks must be greater than 0')
       .default(1),
-    topic: z.string().trim().optional().nullable(),
-    explanation: z.string().trim().optional().nullable(),
+    topic: z.string().trim().max(255, 'Topic cannot exceed 255 characters').optional().nullable(),
+    explanation: z.string().trim().max(10000, 'Explanation cannot exceed 10,000 characters').optional().nullable(),
     source: z.enum(['manual', 'imported', 'generated']).default('manual'),
     review_status: z.enum(['draft', 'approved']).default('approved'),
   })
@@ -111,7 +111,7 @@ export const questionCreateSchema = z
 
 export const questionUpdateSchema = z.object({
   number: z.number().int().positive().optional(),
-  text: z.string().trim().min(1, 'Question text cannot be empty').optional(),
+  text: z.string().trim().min(1, 'Question text cannot be empty').max(10000, 'Question text cannot exceed 10,000 characters').optional(),
   options: z
     .union([
       z.array(optionItemSchema).min(2, 'Must provide at least 2 options'),
@@ -126,14 +126,14 @@ export const questionUpdateSchema = z.object({
     .number({ message: 'marks must be a number' })
     .positive('Marks must be greater than 0')
     .optional(),
-  topic: z.string().trim().optional().nullable(),
-  explanation: z.string().trim().optional().nullable(),
+  topic: z.string().trim().max(255, 'Topic cannot exceed 255 characters').optional().nullable(),
+  explanation: z.string().trim().max(10000, 'Explanation cannot exceed 10,000 characters').optional().nullable(),
   source: z.enum(['manual', 'imported', 'generated']).optional(),
   review_status: z.enum(['draft', 'approved']).optional(),
 });
 
 export const bulkParseSchema = z.object({
-  text: z.string().min(1, 'Input text cannot be empty'),
+  text: z.string().min(1, 'Input text cannot be empty').max(100000, 'Bulk text cannot exceed 100,000 characters'),
 });
 
 export const feedbackSaveSchema = z.object({

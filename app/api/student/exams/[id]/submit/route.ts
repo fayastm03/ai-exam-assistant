@@ -47,7 +47,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   // 2. Fetch student attempt
   const { data: attempt, error: attemptError } = await supabase
     .from('attempts')
-    .select('id, status, score')
+    .select('id, status, score, deadline_at')
     .eq('exam_id', examId)
     .eq('student_id', auth.user.id)
     .single();
@@ -95,7 +95,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   );
 
   const now = new Date();
-  const finalStatus = parsed.data.autoSubmitted ? 'auto_submitted' : 'submitted';
+  const isPastDeadline =
+    attempt.deadline_at && now.getTime() > new Date(attempt.deadline_at).getTime();
+  const finalStatus =
+    parsed.data.autoSubmitted || isPastDeadline ? 'auto_submitted' : 'submitted';
 
   // 6. Update attempt record
   const { data: updatedAttempt, error: updateError } = await supabase

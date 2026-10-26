@@ -3,6 +3,7 @@ import { requireStudent } from '@/lib/auth';
 import { jsonError, jsonSuccess } from '@/lib/api-response';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { calculateScore, QuestionForScoring } from '@/lib/scoring';
+import { checkAndAutoSubmitIfExpired } from '@/lib/attempt-autosubmit';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -47,9 +48,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return jsonError('No attempt found for this exam', 404);
   }
 
-  // 3. Strict guard: Prevent leaking correct_option / explanation before submission
+  // 3. Strict guard: Check if expired mid-test and auto-submit, otherwise prevent leaking answers before submission
   if (attempt.status !== 'submitted' && attempt.status !== 'auto_submitted') {
-    return jsonError('This exam attempt is still in progress. Results are only available after submission.', 403);
+    const autoSubmitRes = await checkAndAutoSubmitIfExpired(supabase, attempt, exam);
+    if (!autoSubmitRes.wasAutoSubmitted) {
+      return jsonError('This exam attempt is still in progress. Results are only available after submission.', 403);
+    }
+    // Attempt was auto-submitted, reload status
+    attempt.status = 'auto_submitted';
+    attempt.score = autoSubmitRes.score ?? attempt.score;
   }
 
   // 4. Fetch questions with correct_option and explanation

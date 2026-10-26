@@ -172,6 +172,15 @@ export default function StudentExamTakePage({
           throw new Error(data.message || 'Failed to submit exam');
         }
 
+        // Multi-tab sync: notify other open tabs to redirect to results
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(`exam_submitted_${examId}`, String(Date.now()));
+          } catch {
+            // Ignore potential storage quota or private browsing exceptions
+          }
+        }
+
         router.replace(`/exams/${examId}/result`);
       } catch (err: unknown) {
         if (!isAutoSubmit) {
@@ -191,6 +200,22 @@ export default function StudentExamTakePage({
   useEffect(() => {
     handleSubmitExamRef.current = handleSubmitExam;
   }, [handleSubmitExam]);
+
+  // Synchronize submission across multiple open tabs
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === `exam_submitted_${examId}`) {
+        router.replace(`/exams/${examId}/result`);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [examId, router]);
 
   // Authoritative Countdown Clock Loop
   useEffect(() => {
@@ -250,6 +275,12 @@ export default function StudentExamTakePage({
           return;
         }
 
+        if (data.alreadySubmitted) {
+          // Exam was submitted from another tab or window
+          router.replace(`/exams/${examId}/result`);
+          return;
+        }
+
         if (!res.ok) {
           throw new Error(data.message || 'Failed to save');
         }
@@ -260,7 +291,7 @@ export default function StudentExamTakePage({
         setSaveStatuses((prev) => ({ ...prev, [questionId]: 'failed' }));
       }
     },
-    [examId, handleSubmitExam]
+    [examId, handleSubmitExam, router]
   );
 
   // Handle Option Selection

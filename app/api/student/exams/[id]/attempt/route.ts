@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { requireStudent } from '@/lib/auth';
 import { jsonError, jsonSuccess } from '@/lib/api-response';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import { checkAndAutoSubmitIfExpired } from '@/lib/attempt-autosubmit';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -62,6 +63,18 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   if (attemptError || !attempt) {
     return jsonError('No attempt found for this exam. Please start the exam first.', 404);
+  }
+
+  // 2b. Auto-submit on next read if deadline has passed (e.g. browser closed mid-test)
+  const autoSubmitRes = await checkAndAutoSubmitIfExpired(supabase, attempt, exam);
+  if (autoSubmitRes.wasAutoSubmitted) {
+    return jsonSuccess({
+      alreadySubmitted: true,
+      autoSubmitted: true,
+      score: autoSubmitRes.score,
+      status: 'auto_submitted',
+      serverTime: new Date().toISOString(),
+    });
   }
 
   // If already submitted, indicate redirect

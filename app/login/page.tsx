@@ -29,8 +29,12 @@ function LoginForm() {
   const urlError =
     errorParam === 'auth_required'
       ? 'Please sign in to access this page.'
+      : errorParam === 'session_expired'
+      ? 'Your session has expired. Please sign in again.'
       : errorParam === 'teacher_required'
       ? 'Access denied: You must be a teacher to view the teacher dashboard.'
+      : errorParam === 'student_required'
+      ? 'Access denied: You must be signed in as a student to access the student portal.'
       : null;
 
   const activeError = errorMsg || urlError;

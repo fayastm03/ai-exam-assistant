@@ -74,3 +74,4 @@ A) Lonely option *
     expect(result.questions[1].errors.some((e) => e.includes('At least 2 options'))).toBe(true);
   });
 });
+

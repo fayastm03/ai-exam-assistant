@@ -134,3 +134,4 @@ export async function requireTeacher(request: NextRequest): Promise<AuthTeacherR
     profile: profile as ProfileRecord,
   };
 }
+

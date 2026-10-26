@@ -8,3 +8,4 @@ import { POST as parseHandler } from '@/app/api/teacher/questions/parse/route';
 export async function POST(request: NextRequest) {
   return parseHandler(request);
 }
+

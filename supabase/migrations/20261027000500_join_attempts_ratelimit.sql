@@ -20,3 +20,4 @@ alter table public.join_attempts enable row level security;
 
 -- Policy: Only service role accesses this table for rate limiting.
 -- Authenticated users have no direct table policies.
+

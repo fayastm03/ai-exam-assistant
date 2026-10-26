@@ -149,3 +149,4 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 }
 
 export const POST = PUT;
+

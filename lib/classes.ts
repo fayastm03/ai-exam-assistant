@@ -38,3 +38,4 @@ export async function generateUniqueJoinCode(supabase: SupabaseClient): Promise<
   // Fallback timestamp suffix if collision persists
   return generateRandomJoinCode();
 }
+

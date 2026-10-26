@@ -77,3 +77,4 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return jsonError(err instanceof Error ? err.message : 'Invalid request payload', 400);
   }
 }
+

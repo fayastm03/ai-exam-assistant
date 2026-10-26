@@ -53,3 +53,4 @@ export async function POST(request: NextRequest, context: RouteContext) {
     message: 'Join code regenerated successfully',
   });
 }
+

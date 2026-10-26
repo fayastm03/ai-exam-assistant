@@ -22,3 +22,4 @@ export function createServiceRoleClient() {
 // Convenient alias for server-side service role client
 export const createAdminClient = createServiceRoleClient
 export const createServerClient = createServiceRoleClient
+

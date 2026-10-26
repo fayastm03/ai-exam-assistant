@@ -94,6 +94,21 @@ export async function requireAuth(request: NextRequest): Promise<AuthUserResult>
     };
   }
 
+  // 2b. Reject users whose email is not confirmed with a clear 403 message
+  if (!authUser.email_confirmed_at) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: 'Forbidden',
+          message: 'Email address not confirmed. Please verify your email before accessing the API.',
+          code: 'email_not_confirmed',
+        },
+        { status: 403 }
+      ),
+    };
+  }
+
   // 3. Fetch authoritative profile from database to verify role
   const { data: profile, error: profileError } = await serviceRole
     .from('profiles')

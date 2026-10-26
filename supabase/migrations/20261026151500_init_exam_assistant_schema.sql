@@ -173,16 +173,8 @@ security definer
 set search_path = ''
 as $$
 declare
-  assigned_role text;
   user_name text;
 begin
-  -- Validate role from metadata, default to 'student'
-  if new.raw_user_meta_data->>'role' = 'teacher' then
-    assigned_role := 'teacher';
-  else
-    assigned_role := 'student';
-  end if;
-
   -- Determine display name with safe fallback
   user_name := coalesce(
     nullif(trim(new.raw_user_meta_data->>'full_name'), ''),
@@ -191,12 +183,13 @@ begin
     'User'
   );
 
+  -- Always assign role 'student'. Ignore any 'role' in raw_user_meta_data.
+  -- Teachers are created strictly via SQL by administrators.
   insert into public.profiles (id, name, role)
-  values (new.id, user_name, assigned_role)
+  values (new.id, user_name, 'student')
   on conflict (id) do update
   set
     name = coalesce(excluded.name, public.profiles.name),
-    role = coalesce(public.profiles.role, excluded.role),
     updated_at = now();
 
   return new;

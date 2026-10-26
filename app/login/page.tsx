@@ -2,30 +2,34 @@
 
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { GraduationCap, BookOpen, AlertCircle, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { GraduationCap, AlertCircle, Loader2, CheckCircle2, Mail } from 'lucide-react';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [role, setRole] = useState<'teacher' | 'student'>('teacher');
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [emailUnconfirmedManual, setEmailUnconfirmedManual] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Derive initial error message directly from searchParams without an effect
+  // Derive initial error & success message from query parameters
   const errorParam = searchParams.get('error');
+  const successParam = searchParams.get('success');
+
+  const isEmailUnconfirmed = emailUnconfirmedManual || errorParam === 'email_not_confirmed';
+
   const urlError =
     errorParam === 'auth_required'
       ? 'Please sign in to access this page.'
@@ -34,31 +38,76 @@ function LoginForm() {
       : errorParam === 'teacher_required'
       ? 'Access denied: You must be a teacher to view the teacher dashboard.'
       : errorParam === 'student_required'
-      ? 'Access denied: You must be signed in as a student to access the student portal.'
+      ? 'Access denied: You must be a student to view the student portal.'
+      : errorParam === 'email_not_confirmed'
+      ? 'Your email address is not confirmed. Please check your inbox or resend the verification email below.'
+      : null;
+
+  const urlSuccess =
+    successParam === 'registered'
+      ? 'Account created! Please check your email to confirm your account before signing in.'
+      : successParam === 'reset_success'
+      ? 'Your password has been reset successfully. Please sign in with your new password.'
       : null;
 
   const activeError = errorMsg || urlError;
+  const activeSuccess = successMsg || urlSuccess;
+
+  // Handle countdown for resend button
+  React.useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
+    setEmailUnconfirmedManual(false);
     setLoading(true);
+
+    const cleanEmail = email.trim();
 
     try {
       const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: cleanEmail,
         password,
       });
 
       if (error) {
-        setErrorMsg(error.message);
+        const isUnconfirmed =
+          error.message.toLowerCase().includes('email not confirmed') ||
+          error.message.toLowerCase().includes('not confirmed') ||
+          error.status === 400 && error.message.toLowerCase().includes('email');
+
+        if (isUnconfirmed) {
+          setEmailUnconfirmedManual(true);
+          setErrorMsg(
+            'Your email address is not confirmed. Please check your inbox or resend the confirmation email below.'
+          );
+        } else {
+          setErrorMsg(error.message);
+        }
         setLoading(false);
         return;
       }
 
       if (data.user) {
+        // Double check confirmation
+        if (!data.user.email_confirmed_at) {
+          setEmailUnconfirmedManual(true);
+          setErrorMsg(
+            'Your email address is not confirmed. Please check your inbox or click Resend below.'
+          );
+          await supabase.auth.signOut();
+          setLoading(false);
+          return;
+        }
+
         // Fetch user profile to determine role
         const { data: profile } = await supabase
           .from('profiles')
@@ -81,53 +130,38 @@ function LoginForm() {
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    setSuccessMsg(null);
-    setLoading(true);
-
-    if (!name.trim()) {
-      setErrorMsg('Please enter your full name.');
-      setLoading(false);
+  const handleResendConfirmation = async () => {
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setErrorMsg('Please enter your email address to resend confirmation.');
       return;
     }
 
+    setResending(true);
+    setErrorMsg(null);
+
     try {
       const supabase = createClient();
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: cleanEmail,
         options: {
-          data: {
-            full_name: name.trim(),
-            role,
-          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
       if (error) {
         setErrorMsg(error.message);
-        setLoading(false);
-        return;
-      }
-
-      // Check if session was created immediately or confirmation required
-      if (data.session) {
-        if (role === 'teacher') {
-          router.push('/teacher/exams');
-        } else {
-          router.push('/exams');
-        }
-        router.refresh();
       } else {
-        setSuccessMsg('Account created successfully! Please check your email to confirm your account or sign in.');
-        setActiveTab('signin');
-        setLoading(false);
+        setSuccessMsg(`Confirmation email sent to ${cleanEmail}. Please check your inbox.`);
+        setResendCooldown(60);
       }
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to register. Please try again.');
-      setLoading(false);
+      setErrorMsg(
+        err instanceof Error ? err.message : 'Failed to resend confirmation email.'
+      );
+    } finally {
+      setResending(false);
     }
   };
 
@@ -141,176 +175,136 @@ function LoginForm() {
           AI Exam Assistant
         </h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-          Server-timed MCQ examination platform
+          Sign in to your account
         </p>
       </div>
 
       <Card className="shadow-lg border-neutral-200/80 dark:border-neutral-800">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'signin' | 'signup')}>
-          <CardHeader className="pb-4">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Create Account</TabsTrigger>
-            </TabsList>
-          </CardHeader>
+        <CardHeader className="pb-4">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+            Sign In
+          </h2>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            Enter your credentials to continue
+          </p>
+        </CardHeader>
 
-          <CardContent className="space-y-4 pt-0">
-            {activeError && (
-              <Alert variant="destructive" className="py-2.5">
-                <AlertCircle className="h-4 w-4" />
+        <CardContent className="space-y-4 pt-0">
+          {activeError && (
+            <Alert variant="destructive" className="py-2.5">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <div className="ml-2">
+                <AlertTitle className="text-xs font-semibold">Error</AlertTitle>
                 <AlertDescription className="text-xs">{activeError}</AlertDescription>
-              </Alert>
-            )}
+              </div>
+            </Alert>
+          )}
 
-            {successMsg && (
-              <Alert className="py-2.5 border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300">
-                <AlertDescription className="text-xs">{successMsg}</AlertDescription>
-              </Alert>
-            )}
+          {activeSuccess && (
+            <Alert className="py-2.5 border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <div className="ml-2">
+                <AlertDescription className="text-xs">{activeSuccess}</AlertDescription>
+              </div>
+            </Alert>
+          )}
 
-            <TabsContent value="signin" className="mt-0 space-y-4">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="signin-email">Email Address</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="teacher@school.edu"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                    disabled={loading}
-                  />
+          {isEmailUnconfirmed && (
+            <div className="p-3.5 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 space-y-2">
+              <div className="flex items-start gap-2">
+                <Mail className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <div className="text-xs text-amber-800 dark:text-amber-300">
+                  <p className="font-semibold">Email confirmation required</p>
+                  <p className="mt-0.5">
+                    Didn&apos;t receive the email or did it expire? Click below to send a fresh confirmation link.
+                  </p>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                    disabled={loading}
-                  />
-                </div>
-
-                <Button type="submit" className="w-full mt-2" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing In...
-                    </>
-                  ) : (
-                    'Sign In'
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup" className="mt-0 space-y-4">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="signup-name">Full Name</Label>
-                  <Input
-                    id="signup-name"
-                    type="text"
-                    placeholder="Dr. Jane Doe"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="signup-email">Email Address</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="teacher@school.edu"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                    disabled={loading}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="At least 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    autoComplete="new-password"
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label>I am a:</Label>
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setRole('teacher')}
-                      className={`flex flex-col items-center justify-center p-3 rounded-lg border text-sm font-medium transition-all ${
-                        role === 'teacher'
-                          ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 ring-1 ring-blue-600'
-                          : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100/50'
-                      }`}
-                    >
-                      <GraduationCap className="w-5 h-5 mb-1" />
-                      Teacher
-                      <span className="text-[10px] text-neutral-500 font-normal">Create & mark exams</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRole('student')}
-                      className={`flex flex-col items-center justify-center p-3 rounded-lg border text-sm font-medium transition-all ${
-                        role === 'student'
-                          ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 ring-1 ring-blue-600'
-                          : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100/50'
-                      }`}
-                    >
-                      <BookOpen className="w-5 h-5 mb-1" />
-                      Student
-                      <span className="text-[10px] text-neutral-500 font-normal">Take exams</span>
-                    </button>
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full mt-2" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    `Sign Up as ${role === 'teacher' ? 'Teacher' : 'Student'}`
-                  )}
-                </Button>
-              </form>
-            </TabsContent>
-          </CardContent>
-
-          <CardFooter className="pt-0 pb-4 text-center justify-center">
-            <p className="text-xs text-neutral-500">
-              {activeTab === 'signin' ? "Don't have an account yet?" : 'Already registered?'}{' '}
-              <button
+              </div>
+              <Button
                 type="button"
-                onClick={() => setActiveTab(activeTab === 'signin' ? 'signup' : 'signin')}
-                className="text-blue-600 font-semibold hover:underline"
+                variant="outline"
+                size="sm"
+                onClick={handleResendConfirmation}
+                disabled={resending || resendCooldown > 0 || !email.trim()}
+                className="w-full text-xs h-8 border-amber-400 hover:bg-amber-100 dark:border-amber-700 dark:hover:bg-amber-900/50"
               >
-                {activeTab === 'signin' ? 'Sign up' : 'Sign in'}
-              </button>
-            </p>
-          </CardFooter>
-        </Tabs>
+                {resending ? (
+                  <>
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    Sending email...
+                  </>
+                ) : resendCooldown > 0 ? (
+                  `Resend in ${resendCooldown}s`
+                ) : (
+                  'Resend Confirmation Email'
+                )}
+              </Button>
+            </div>
+          )}
+
+          <form onSubmit={handleSignIn} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="signin-email">Email Address</Label>
+              <Input
+                id="signin-email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="signin-password">Password</Label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <Input
+                id="signin-password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                disabled={loading}
+              />
+            </div>
+
+            <Button type="submit" className="w-full mt-2" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing In...
+                </>
+              ) : (
+                'Sign In'
+              )}
+            </Button>
+          </form>
+        </CardContent>
+
+        <CardFooter className="pt-0 pb-4 text-center justify-center flex-col gap-2">
+          <p className="text-xs text-neutral-500">
+            Don&apos;t have an account yet?{' '}
+            <Link
+              href="/signup"
+              className="text-blue-600 font-semibold hover:underline dark:text-blue-400"
+            >
+              Sign up as a student
+            </Link>
+          </p>
+          <p className="text-[11px] text-neutral-400">
+            (Teacher accounts are provisioned by system administrator)
+          </p>
+        </CardFooter>
       </Card>
     </div>
   );

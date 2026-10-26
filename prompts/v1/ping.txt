@@ -1,0 +1,7 @@
+You are an AI assistant.
+Respond ONLY with a valid JSON object matching this schema:
+{
+  "status": "ok",
+  "message": "{{message}}",
+  "timestamp": "ISO-8601 string"
+}

@@ -12,7 +12,7 @@ export interface ProfileRecord {
   updated_at: string;
 }
 
-export type AuthTeacherResult =
+export type AuthUserResult =
   | {
       ok: true;
       user: User;
@@ -23,13 +23,13 @@ export type AuthTeacherResult =
       response: NextResponse;
     };
 
+// Backward compatibility alias
+export type AuthTeacherResult = AuthUserResult;
+
 /**
- * Authenticates the user and verifies that they possess the 'teacher' role.
- * Supports:
- *  1. `Authorization: Bearer <token>` header (Postman, mobile / Flutter app)
- *  2. Browser cookies (Next.js App Router session via @supabase/ssr)
+ * Authenticates the user via Bearer token or session cookie.
  */
-export async function requireTeacher(request: NextRequest): Promise<AuthTeacherResult> {
+export async function requireAuth(request: NextRequest): Promise<AuthUserResult> {
   const serviceRole = createServiceRoleClient();
   let authUser: User | null = null;
 
@@ -114,8 +114,21 @@ export async function requireTeacher(request: NextRequest): Promise<AuthTeacherR
     };
   }
 
-  // 4. Verify teacher role
-  if (profile.role !== 'teacher') {
+  return {
+    ok: true,
+    user: authUser,
+    profile: profile as ProfileRecord,
+  };
+}
+
+/**
+ * Authenticates user and verifies teacher role.
+ */
+export async function requireTeacher(request: NextRequest): Promise<AuthUserResult> {
+  const auth = await requireAuth(request);
+  if (!auth.ok) return auth;
+
+  if (auth.profile.role !== 'teacher') {
     return {
       ok: false,
       response: NextResponse.json(
@@ -128,10 +141,28 @@ export async function requireTeacher(request: NextRequest): Promise<AuthTeacherR
     };
   }
 
-  return {
-    ok: true,
-    user: authUser,
-    profile: profile as ProfileRecord,
-  };
+  return auth;
 }
 
+/**
+ * Authenticates user and verifies student role.
+ */
+export async function requireStudent(request: NextRequest): Promise<AuthUserResult> {
+  const auth = await requireAuth(request);
+  if (!auth.ok) return auth;
+
+  if (auth.profile.role !== 'student') {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: 'Forbidden',
+          message: 'Access denied: Student role required',
+        },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return auth;
+}

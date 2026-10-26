@@ -12,6 +12,7 @@ import { QuestionEditorDialog, QuestionData } from '@/components/teacher/questio
 import { ExamSettingsTab } from '@/components/teacher/exam-settings-tab';
 import { BulkPasteTab } from '@/components/teacher/bulk-paste-tab';
 import { PaperImportTab } from '@/components/teacher/paper-import-tab';
+import { GenerateNotesTab } from '@/components/teacher/generate-notes-tab';
 import { StudentPreviewTab } from '@/components/teacher/student-preview-tab';
 import { PublishButtonWithDialog } from '@/components/teacher/publish-dialog';
 import {
@@ -25,6 +26,7 @@ import {
   Clock,
   FileText,
   AlertCircle,
+  AlertTriangle,
   Loader2,
   HelpCircle,
   BarChart3,
@@ -77,8 +79,16 @@ export default function TeacherExamDetailPage({
 
   // Active tab state
   const [activeTab, setActiveTab] = useState<
-    'questions' | 'import' | 'bulk' | 'settings' | 'preview'
+    'questions' | 'generate' | 'import' | 'bulk' | 'settings' | 'preview'
   >('questions');
+
+  // AI Explanations state
+  const [explaining, setExplaining] = useState(false);
+  const [explainBanner, setExplainBanner] = useState<{
+    type: 'success' | 'warning' | 'error';
+    message: string;
+    details?: string[];
+  } | null>(null);
 
   // Question Editor Dialog
   const [editorOpen, setEditorOpen] = useState(false);
@@ -245,6 +255,55 @@ export default function TeacherExamDetailPage({
     }
   };
 
+  const handleWriteExplanations = async () => {
+    if (questions.length === 0) return;
+    setExplaining(true);
+    setExplainBanner(null);
+
+    try {
+      const res = await fetch(`/api/teacher/exams/${examId}/explain`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+
+      if (res.status === 429) {
+        setExplainBanner({
+          type: 'warning',
+          message: 'AI Rate Limit Reached: The Gemini API quota was exceeded. Please wait 30 seconds and try again.',
+        });
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to generate explanations');
+      }
+
+      fetchExamData();
+
+      if (data.data?.flaggedCount > 0) {
+        setExplainBanner({
+          type: 'warning',
+          message: `Generated explanations for ${data.data.updatedCount} question(s). AI flagged ${data.data.flaggedCount} question(s) with potential issues. Please review them below!`,
+          details: data.data.flaggedQuestions?.map(
+            (fq: { number: number; reason: string }) => `Question #${fq.number}: ${fq.reason}`
+          ),
+        });
+      } else {
+        setExplainBanner({
+          type: 'success',
+          message: `Successfully generated educational explanations for all ${data.data?.updatedCount || questions.length} question(s) as drafts.`,
+        });
+      }
+    } catch (err: unknown) {
+      setExplainBanner({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to generate explanations',
+      });
+    } finally {
+      setExplaining(false);
+    }
+  };
+
   const renderStatusBadge = (status: ExamDetail['status']) => {
     switch (status) {
       case 'published':
@@ -361,13 +420,17 @@ export default function TeacherExamDetailPage({
       <Tabs
         value={activeTab}
         onValueChange={(v) =>
-          setActiveTab(v as 'questions' | 'import' | 'bulk' | 'settings' | 'preview')
+          setActiveTab(v as 'questions' | 'generate' | 'import' | 'bulk' | 'settings' | 'preview')
         }
         className="space-y-6"
       >
-        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full sm:w-auto sm:inline-grid">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-6 w-full sm:w-auto sm:inline-grid">
           <TabsTrigger value="questions" className="text-xs sm:text-sm">
             Questions ({questions.length})
+          </TabsTrigger>
+          <TabsTrigger value="generate" className="text-xs sm:text-sm flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+            Generate (AI)
           </TabsTrigger>
           <TabsTrigger value="import" className="text-xs sm:text-sm flex items-center gap-1">
             <Sparkles className="w-3.5 h-3.5 text-blue-500" />
@@ -394,7 +457,38 @@ export default function TeacherExamDetailPage({
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleWriteExplanations}
+                disabled={explaining || questions.length === 0}
+                className="text-xs text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+                title="Generate AI explanations for all questions in this exam"
+              >
+                {explaining ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    Writing Explanations...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5 mr-1.5 text-purple-600" />
+                    Write explanations
+                  </>
+                )}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveTab('generate')}
+                className="text-xs text-purple-600 border-purple-200 hover:bg-purple-50 dark:hover:bg-purple-950/20"
+              >
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                Generate Notes
+              </Button>
+
               <Button
                 variant="outline"
                 size="sm"
@@ -422,6 +516,38 @@ export default function TeacherExamDetailPage({
             </div>
           </div>
 
+          {/* Explanation Alert Banner */}
+          {explainBanner && (
+            <Alert
+              variant={explainBanner.type === 'error' ? 'destructive' : 'default'}
+              className={
+                explainBanner.type === 'warning'
+                  ? 'border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200'
+                  : explainBanner.type === 'success'
+                  ? 'border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100'
+                  : ''
+              }
+            >
+              {explainBanner.type === 'warning' ? (
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+              ) : explainBanner.type === 'success' ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              <AlertDescription className="text-xs space-y-1">
+                <p className="font-semibold">{explainBanner.message}</p>
+                {explainBanner.details && (
+                  <ul className="list-disc list-inside mt-1 space-y-0.5 text-[11px]">
+                    {explainBanner.details.map((d, i) => (
+                      <li key={i}>{d}</li>
+                    ))}
+                  </ul>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
+
           {questions.length === 0 ? (
             <Card className="border-dashed py-12 text-center bg-neutral-50/50 dark:bg-neutral-900/50">
               <CardContent className="flex flex-col items-center justify-center space-y-4">
@@ -446,183 +572,249 @@ export default function TeacherExamDetailPage({
             </Card>
           ) : (
             <div className="space-y-3">
-              {questions.map((q, index) => (
-                <Card
-                  key={q.id}
-                  className="border-neutral-200/80 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
-                >
-                  <CardHeader className="py-3 px-4 pb-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-xs bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 rounded text-neutral-800 dark:text-neutral-200">
-                          #{q.number}
-                        </span>
-                        {q.topic && (
-                          <Badge variant="secondary" className="text-[10px] py-0">
-                            {q.topic}
-                          </Badge>
-                        )}
-                        <Badge variant="outline" className="text-[10px] py-0 font-medium">
-                          {q.marks} {q.marks === 1 ? 'Mark' : 'Marks'}
-                        </Badge>
+              {questions.map((q, index) => {
+                const flagMatch = q.explanation?.match(/^\[AI Flag:\s*([^\]]+)\]\s*([\s\S]*)$/);
+                const isFlagged = Boolean(flagMatch);
+                const flagReason = flagMatch ? flagMatch[1].trim() : null;
+                const cleanExplanation = flagMatch ? flagMatch[2].trim() : q.explanation;
 
-                        {q.source === 'imported' && (
-                          <Badge variant="outline" className="text-[10px] py-0 text-blue-600 border-blue-200">
-                            Imported
-                          </Badge>
-                        )}
-
-                        {q.review_status === 'draft' ? (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] py-0 text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-950/20"
-                          >
-                            Draft
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] py-0 text-emerald-700 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20"
-                          >
-                            Approved
-                          </Badge>
-                        )}
-
-                        {(!q.correct_option || q.correct_option === 'UNSET') && (
-                          <Badge variant="destructive" className="text-[10px] py-0 font-medium">
-                            No Correct Option
-                          </Badge>
-                        )}
-
-                        {q.text.includes('[unclear]') && (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] py-0 bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950"
-                          >
-                            Contains [unclear]
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex items-center gap-1">
-                        {q.review_status === 'draft' && q.correct_option && q.correct_option !== 'UNSET' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleApproveQuestion(q.id)}
-                            className="h-7 text-xs text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950 mr-1"
-                            title="Approve Question"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                            Approve
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReorder(index, 'up')}
-                          disabled={index === 0 || reordering}
-                          className="h-7 w-7 p-0 text-neutral-400 hover:text-neutral-900"
-                          title="Move Up"
-                        >
-                          <ChevronUp className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReorder(index, 'down')}
-                          disabled={index === questions.length - 1 || reordering}
-                          className="h-7 w-7 p-0 text-neutral-400 hover:text-neutral-900"
-                          title="Move Down"
-                        >
-                          <ChevronDown className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDuplicateQuestion(q)}
-                          className="h-7 w-7 p-0 text-neutral-400 hover:text-blue-600"
-                          title="Duplicate Question"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenEditQuestion(q)}
-                          className="h-7 w-7 p-0 text-neutral-400 hover:text-blue-600"
-                          title="Edit Question"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteQuestion(q.id, q.number)}
-                          disabled={deletingQId === q.id}
-                          className="h-7 w-7 p-0 text-neutral-400 hover:text-red-600"
-                          title="Delete Question"
-                        >
-                          {deletingQId === q.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-red-600" />
-                          ) : (
-                            <Trash2 className="w-3.5 h-3.5" />
+                return (
+                  <Card
+                    key={q.id}
+                    className={`border transition-colors ${
+                      isFlagged
+                        ? 'border-amber-400 dark:border-amber-600 bg-amber-50/10'
+                        : 'border-neutral-200/80 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
+                    }`}
+                  >
+                    <CardHeader className="py-3 px-4 pb-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-xs bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 rounded text-neutral-800 dark:text-neutral-200">
+                            #{q.number}
+                          </span>
+                          {q.topic && (
+                            <Badge variant="secondary" className="text-[10px] py-0">
+                              {q.topic}
+                            </Badge>
                           )}
-                        </Button>
-                      </div>
-                    </div>
+                          <Badge variant="outline" className="text-[10px] py-0 font-medium">
+                            {q.marks} {q.marks === 1 ? 'Mark' : 'Marks'}
+                          </Badge>
 
-                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 pt-1.5 whitespace-pre-line leading-relaxed">
-                      {q.text}
-                    </p>
-                  </CardHeader>
-
-                  <CardContent className="py-2 px-4 pb-3 space-y-2">
-                    {/* Options list */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                      {Array.isArray(q.options) &&
-                        q.options.map((opt) => {
-                          const isCorrect = q.correct_option === opt.id;
-                          return (
-                            <div
-                              key={opt.id}
-                              className={`flex items-start gap-2 p-2 rounded-md border text-xs ${
-                                isCorrect
-                                  ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-100 font-medium'
-                                  : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300'
-                              }`}
+                          {q.source === 'generated' && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] py-0 text-purple-700 border-purple-300 bg-purple-50 dark:bg-purple-950/20 font-medium"
                             >
-                              <span className="font-bold text-[11px] w-4 text-center shrink-0">
-                                {opt.id}.
-                              </span>
-                              <span className="flex-1">{opt.text}</span>
-                              {isCorrect && (
-                                <span className="text-[10px] text-emerald-600 font-bold shrink-0">
-                                  ✓ Correct
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                    </div>
+                              Generated
+                            </Badge>
+                          )}
 
-                    {q.explanation && (
-                      <div className="text-xs text-neutral-500 bg-neutral-50 dark:bg-neutral-900 p-2.5 rounded border border-neutral-100 dark:border-neutral-800/80 mt-1">
-                        <span className="font-semibold text-neutral-700 dark:text-neutral-300">
-                          Explanation:{' '}
-                        </span>
-                        {q.explanation}
+                          {q.source === 'imported' && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] py-0 text-blue-600 border-blue-200"
+                            >
+                              Imported
+                            </Badge>
+                          )}
+
+                          {q.review_status === 'draft' ? (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] py-0 text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-950/20"
+                            >
+                              Draft
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] py-0 text-emerald-700 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20"
+                            >
+                              Approved
+                            </Badge>
+                          )}
+
+                          {isFlagged && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] py-0 text-amber-800 border-amber-400 bg-amber-100 dark:bg-amber-950 font-bold"
+                            >
+                              ⚠️ AI Flagged
+                            </Badge>
+                          )}
+
+                          {(!q.correct_option || q.correct_option === 'UNSET') && (
+                            <Badge variant="destructive" className="text-[10px] py-0 font-medium">
+                              No Correct Option
+                            </Badge>
+                          )}
+
+                          {q.text.includes('[unclear]') && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] py-0 bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950"
+                            >
+                              Contains [unclear]
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-1">
+                          {q.review_status === 'draft' &&
+                            q.correct_option &&
+                            q.correct_option !== 'UNSET' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleApproveQuestion(q.id)}
+                                className="h-7 text-xs text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950 mr-1"
+                                title="Approve Question"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                                Approve
+                              </Button>
+                            )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleReorder(index, 'up')}
+                            disabled={index === 0 || reordering}
+                            className="h-7 w-7 p-0 text-neutral-400 hover:text-neutral-900"
+                            title="Move Up"
+                          >
+                            <ChevronUp className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleReorder(index, 'down')}
+                            disabled={index === questions.length - 1 || reordering}
+                            className="h-7 w-7 p-0 text-neutral-400 hover:text-neutral-900"
+                            title="Move Down"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDuplicateQuestion(q)}
+                            className="h-7 w-7 p-0 text-neutral-400 hover:text-blue-600"
+                            title="Duplicate Question"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenEditQuestion(q)}
+                            className="h-7 w-7 p-0 text-neutral-400 hover:text-blue-600"
+                            title="Edit Question"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteQuestion(q.id, q.number)}
+                            disabled={deletingQId === q.id}
+                            className="h-7 w-7 p-0 text-neutral-400 hover:text-red-600"
+                            title="Delete Question"
+                          >
+                            {deletingQId === q.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-red-600" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+
+                      {/* Prominent AI Flag Warning Box */}
+                      {isFlagged && flagReason && (
+                        <div className="mt-2.5 p-3 rounded-md border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/60 text-amber-950 dark:text-amber-100 text-xs">
+                          <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-200 mb-1">
+                            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span>AI Verification Flag: Potential Issue Detected</span>
+                          </div>
+                          <p className="leading-relaxed pl-5 font-medium">{flagReason}</p>
+                          <p className="text-[11px] text-amber-800 dark:text-amber-300 mt-1 pl-5 italic">
+                            The designated correct option has NOT been changed. Please review the statement, options, or correct answer above.
+                          </p>
+                        </div>
+                      )}
+
+                      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 pt-1.5 whitespace-pre-line leading-relaxed">
+                        {q.text}
+                      </p>
+                    </CardHeader>
+
+                    <CardContent className="py-2 px-4 pb-3 space-y-2">
+                      {/* Options list */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        {Array.isArray(q.options) &&
+                          q.options.map((opt) => {
+                            const isCorrect = q.correct_option === opt.id;
+                            return (
+                              <div
+                                key={opt.id}
+                                className={`flex items-start gap-2 p-2 rounded-md border text-xs ${
+                                  isCorrect
+                                    ? 'border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-100 font-medium'
+                                    : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300'
+                                }`}
+                              >
+                                <span className="font-bold text-[11px] w-4 text-center shrink-0">
+                                  {opt.id}.
+                                </span>
+                                <span className="flex-1">{opt.text}</span>
+                                {isCorrect && (
+                                  <span className="text-[10px] text-emerald-600 font-bold shrink-0">
+                                    ✓ Correct
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+
+                      {cleanExplanation && (
+                        <div className="text-xs text-neutral-600 dark:text-neutral-300 bg-neutral-50 dark:bg-neutral-900 p-2.5 rounded border border-neutral-200/80 dark:border-neutral-800/80 mt-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-semibold text-neutral-700 dark:text-neutral-200">
+                              {q.review_status === 'draft' ? 'Draft Explanation:' : 'Explanation:'}
+                            </span>
+                            {q.review_status === 'draft' && (
+                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                Draft (Teacher Review Required)
+                              </span>
+                            )}
+                          </div>
+                          <p className="leading-relaxed whitespace-pre-line">
+                            {cleanExplanation}
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
 
-        {/* Tab 2: Paper Import */}
+        {/* Tab 2: Generate from Notes (AI) */}
+        <TabsContent value="generate">
+          <GenerateNotesTab
+            examId={exam.id}
+            onGenerated={fetchExamData}
+            onNavigateToQuestions={() => setActiveTab('questions')}
+          />
+        </TabsContent>
+
+        {/* Tab 3: Paper Import */}
         <TabsContent value="import">
           <PaperImportTab examId={exam.id} onImportCompleted={fetchExamData} />
         </TabsContent>

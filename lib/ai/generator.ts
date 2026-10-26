@@ -97,3 +97,4 @@ export async function generateQuestionsFromNotes(
   const fullPrompt = `${systemPrompt}\n\nReference Material / Notes:\n${text}`;
   return provider.generateText(fullPrompt, generatedQuestionsResponseSchema);
 }
+

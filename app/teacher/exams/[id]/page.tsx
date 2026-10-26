@@ -26,6 +26,7 @@ import {
   AlertCircle,
   Loader2,
   HelpCircle,
+  BarChart3,
 } from 'lucide-react';
 
 interface QuestionItem {
@@ -293,13 +294,23 @@ export default function TeacherExamDetailPage({
             Back to All Exams
           </Link>
 
-          <PublishButtonWithDialog
-            examId={exam.id}
-            isPublished={exam.status === 'published'}
-            onPublishedSuccess={(updated) =>
-              setExam((prev) => (prev ? { ...prev, status: updated.status } : null))
-            }
-          />
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/teacher/exams/${exam.id}/results`}
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-xs h-8')}
+            >
+              <BarChart3 className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
+              Class Results
+            </Link>
+
+            <PublishButtonWithDialog
+              examId={exam.id}
+              isPublished={exam.status === 'published'}
+              onPublishedSuccess={(updated) =>
+                setExam((prev) => (prev ? { ...prev, status: updated.status } : null))
+              }
+            />
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

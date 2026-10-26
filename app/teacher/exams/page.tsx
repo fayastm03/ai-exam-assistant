@@ -30,6 +30,7 @@ import {
   Calendar,
   Loader2,
   BookOpen,
+  BarChart3,
 } from 'lucide-react';
 
 interface ExamListItem {
@@ -454,7 +455,16 @@ export default function TeacherExamsPage() {
                   className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'flex-1 text-xs')}
                 >
                   <Edit className="w-3.5 h-3.5 mr-1.5" />
-                  Manage Questions
+                  Edit
+                </Link>
+
+                <Link
+                  href={`/teacher/exams/${exam.id}/results`}
+                  className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'flex-1 text-xs')}
+                  title="View Class Results"
+                >
+                  <BarChart3 className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
+                  Results
                 </Link>
 
                 <Button

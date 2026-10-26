@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   examCreateSchema,
-  examUpdateSchema,
   questionCreateSchema,
   bulkParseSchema,
 } from '@/lib/validations/teacher';

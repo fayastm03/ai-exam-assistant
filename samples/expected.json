@@ -1,0 +1,18 @@
+{
+  "sample-physics.docx": {
+    "questions": [
+      {
+        "number": 1,
+        "text": "What is the unit of force in the SI system?",
+        "options": [
+          { "id": "A", "text": "Joule" },
+          { "id": "B", "text": "Newton" },
+          { "id": "C", "text": "Pascal" },
+          { "id": "D", "text": "Watt" }
+        ],
+        "correct_option": "B",
+        "marks": 1
+      }
+    ]
+  }
+}

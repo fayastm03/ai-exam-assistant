@@ -96,6 +96,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
       const qNum = q.number ?? `ID ${q.id}`;
       const optionKeys = extractOptionKeys(q.options);
 
+      if (q.review_status === 'draft') {
+        errors.push(
+          `Question #${qNum} is still in draft status. Please review and approve it before publishing.`
+        );
+      }
+
       if (optionKeys.length < 2) {
         errors.push(`Question #${qNum} must have at least 2 options (found ${optionKeys.length}).`);
       }

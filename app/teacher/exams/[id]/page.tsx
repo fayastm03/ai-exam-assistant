@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { QuestionEditorDialog, QuestionData } from '@/components/teacher/question-editor-dialog';
 import { ExamSettingsTab } from '@/components/teacher/exam-settings-tab';
 import { BulkPasteTab } from '@/components/teacher/bulk-paste-tab';
+import { PaperImportTab } from '@/components/teacher/paper-import-tab';
 import { StudentPreviewTab } from '@/components/teacher/student-preview-tab';
 import { PublishButtonWithDialog } from '@/components/teacher/publish-dialog';
 import {
@@ -27,6 +28,8 @@ import {
   Loader2,
   HelpCircle,
   BarChart3,
+  Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
 
 interface QuestionItem {
@@ -73,7 +76,9 @@ export default function TeacherExamDetailPage({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Active tab state
-  const [activeTab, setActiveTab] = useState<'questions' | 'settings' | 'bulk' | 'preview'>('questions');
+  const [activeTab, setActiveTab] = useState<
+    'questions' | 'import' | 'bulk' | 'settings' | 'preview'
+  >('questions');
 
   // Question Editor Dialog
   const [editorOpen, setEditorOpen] = useState(false);
@@ -223,6 +228,23 @@ export default function TeacherExamDetailPage({
     }
   };
 
+  const handleApproveQuestion = async (qId: string) => {
+    try {
+      const res = await fetch(`/api/teacher/exams/${examId}/questions/${qId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ review_status: 'approved' }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to approve question');
+      }
+      fetchExamData();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error approving question');
+    }
+  };
+
   const renderStatusBadge = (status: ExamDetail['status']) => {
     switch (status) {
       case 'published':
@@ -338,12 +360,18 @@ export default function TeacherExamDetailPage({
       {/* Tabs Navigation */}
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as 'questions' | 'settings' | 'bulk' | 'preview')}
+        onValueChange={(v) =>
+          setActiveTab(v as 'questions' | 'import' | 'bulk' | 'settings' | 'preview')
+        }
         className="space-y-6"
       >
-        <TabsList className="grid grid-cols-4 w-full sm:w-auto sm:inline-grid">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full sm:w-auto sm:inline-grid">
           <TabsTrigger value="questions" className="text-xs sm:text-sm">
             Questions ({questions.length})
+          </TabsTrigger>
+          <TabsTrigger value="import" className="text-xs sm:text-sm flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+            Import Paper
           </TabsTrigger>
           <TabsTrigger value="bulk" className="text-xs sm:text-sm">
             Bulk Paste
@@ -367,6 +395,16 @@ export default function TeacherExamDetailPage({
             </div>
 
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveTab('import')}
+                className="text-xs text-blue-600 border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+              >
+                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+                Import Paper
+              </Button>
+
               <Button
                 variant="outline"
                 size="sm"
@@ -427,10 +465,59 @@ export default function TeacherExamDetailPage({
                         <Badge variant="outline" className="text-[10px] py-0 font-medium">
                           {q.marks} {q.marks === 1 ? 'Mark' : 'Marks'}
                         </Badge>
+
+                        {q.source === 'imported' && (
+                          <Badge variant="outline" className="text-[10px] py-0 text-blue-600 border-blue-200">
+                            Imported
+                          </Badge>
+                        )}
+
+                        {q.review_status === 'draft' ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] py-0 text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-950/20"
+                          >
+                            Draft
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] py-0 text-emerald-700 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20"
+                          >
+                            Approved
+                          </Badge>
+                        )}
+
+                        {(!q.correct_option || q.correct_option === 'UNSET') && (
+                          <Badge variant="destructive" className="text-[10px] py-0 font-medium">
+                            No Correct Option
+                          </Badge>
+                        )}
+
+                        {q.text.includes('[unclear]') && (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] py-0 bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950"
+                          >
+                            Contains [unclear]
+                          </Badge>
+                        )}
                       </div>
 
                       {/* Action buttons */}
                       <div className="flex items-center gap-1">
+                        {q.review_status === 'draft' && q.correct_option && q.correct_option !== 'UNSET' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleApproveQuestion(q.id)}
+                            className="h-7 text-xs text-emerald-700 border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950 mr-1"
+                            title="Approve Question"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                            Approve
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -535,7 +622,12 @@ export default function TeacherExamDetailPage({
           )}
         </TabsContent>
 
-        {/* Tab 2: Bulk Paste */}
+        {/* Tab 2: Paper Import */}
+        <TabsContent value="import">
+          <PaperImportTab examId={exam.id} onImportCompleted={fetchExamData} />
+        </TabsContent>
+
+        {/* Tab 3: Bulk Paste */}
         <TabsContent value="bulk">
           <BulkPasteTab examId={exam.id} onQuestionsAdded={fetchExamData} />
         </TabsContent>

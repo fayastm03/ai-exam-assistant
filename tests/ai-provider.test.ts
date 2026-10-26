@@ -25,6 +25,8 @@ describe('GeminiProvider Parsing & Retry Logic', () => {
   beforeEach(() => {
     process.env.GEMINI_API_KEY = 'test-key';
     process.env.GEMINI_MODEL = 'gemini-3-flash-preview';
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   it('successfully parses valid JSON matching schema on first attempt', async () => {

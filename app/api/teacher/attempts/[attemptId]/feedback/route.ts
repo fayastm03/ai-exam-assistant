@@ -38,7 +38,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return handleZodError(parsed.error);
   }
 
-  const { overallComment, questionComments, released } = parsed.data;
+  const { overallComment, questionComments, released, source } = parsed.data;
 
   // 1. Fetch attempt
   const { data: attempt, error: attemptError } = await supabase
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           comment: overallComment.trim(),
           released,
           teacher_id: auth.user.id,
-          source: 'manual',
+          source: source || 'manual',
           updated_at: now,
         })
         .eq('id', existingOverall.id);
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         question_id: null,
         comment: overallComment.trim(),
         released,
-        source: 'manual',
+        source: source || 'manual',
         created_at: now,
         updated_at: now,
       });

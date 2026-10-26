@@ -25,6 +25,7 @@ import {
   Send,
   Save,
   MessageSquare,
+  Sparkles,
 } from 'lucide-react';
 
 interface AttemptFeedbackData {
@@ -56,11 +57,12 @@ interface AttemptFeedbackData {
       id: string;
       comment: string;
       released: boolean;
+      source?: 'manual' | 'ai_draft';
       updated_at: string;
     } | null;
     byQuestion: Record<
       string,
-      { id: string; comment: string; released: boolean; updated_at: string }
+      { id: string; comment: string; released: boolean; source?: 'manual' | 'ai_draft'; updated_at: string }
     >;
   };
   questions: {
@@ -114,6 +116,10 @@ export function AttemptFeedbackDialog({
   const [overallComment, setOverallComment] = useState('');
   const [questionComments, setQuestionComments] = useState<Record<string, string>>({});
 
+  // AI Suggestion states
+  const [suggesting, setSuggesting] = useState(false);
+  const [aiDraftPending, setAiDraftPending] = useState(false);
+
   useEffect(() => {
     if (!open || !attemptId) return;
 
@@ -123,6 +129,7 @@ export function AttemptFeedbackDialog({
       setLoading(true);
       setErrorMsg(null);
       setSuccessMsg(null);
+      setAiDraftPending(false);
 
       try {
         const res = await fetch(`/api/teacher/attempts/${attemptId}`, {
@@ -165,6 +172,37 @@ export function AttemptFeedbackDialog({
     };
   }, [open, attemptId]);
 
+  const handleSuggestFeedback = async () => {
+    if (!attemptId) return;
+    setSuggesting(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await fetch(`/api/teacher/attempts/${attemptId}/suggest-feedback`, {
+        method: 'POST',
+      });
+      const json = await res.json();
+
+      if (res.status === 429) {
+        throw new Error('AI rate limit reached. The AI provider is busy. Please wait a moment and try again.');
+      }
+
+      if (!res.ok) {
+        throw new Error(json.message || 'Failed to generate feedback suggestion');
+      }
+
+      const suggestedText = json.data?.feedback || '';
+      setOverallComment(suggestedText);
+      setAiDraftPending(true);
+      setSuccessMsg('AI draft feedback suggested! You can review and edit it before saving.');
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Error suggesting feedback');
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
   const handleSave = async (released: boolean) => {
     if (!attemptId) return;
 
@@ -183,6 +221,12 @@ export function AttemptFeedbackDialog({
         comment,
       }));
 
+      // If this comment was suggested by AI, save it with source: 'ai_draft'
+      const source =
+        aiDraftPending || data?.feedback?.overall?.source === 'ai_draft'
+          ? 'ai_draft'
+          : 'manual';
+
       const res = await fetch(`/api/teacher/attempts/${attemptId}/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -190,6 +234,7 @@ export function AttemptFeedbackDialog({
           overallComment,
           questionComments: qCommentPayload,
           released,
+          source,
         }),
       });
 
@@ -198,6 +243,7 @@ export function AttemptFeedbackDialog({
         throw new Error(json.message || 'Failed to save feedback');
       }
 
+      setAiDraftPending(false);
       setSuccessMsg(
         released
           ? 'Feedback released to the student!'
@@ -350,26 +396,71 @@ export function AttemptFeedbackDialog({
             {/* Overall Feedback Form */}
             <div className="p-4 rounded-xl border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/30 dark:bg-blue-950/10 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                    Overall Attempt Feedback
-                  </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <MessageSquare className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                      Overall Attempt Feedback
+                    </span>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSuggestFeedback}
+                    disabled={
+                      suggesting ||
+                      saving ||
+                      (data.attempt.status !== 'submitted' && data.attempt.status !== 'auto_submitted')
+                    }
+                    className="h-7 text-xs border-purple-300 text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+                    title="Generate personalized feedback suggestion using AI"
+                  >
+                    {suggesting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                        Suggesting feedback...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5 mr-1.5 text-purple-600" />
+                        Suggest feedback
+                      </>
+                    )}
+                  </Button>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {data.feedback.overall ? (
+                  {aiDraftPending ? (
                     <Badge
                       variant="outline"
-                      className={cn(
-                        'text-[10px] font-medium py-0',
-                        isOverallReleased
-                          ? 'border-emerald-300 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/20'
-                          : 'border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/20'
-                      )}
+                      className="text-[10px] font-medium py-0 border-purple-400 text-purple-700 bg-purple-50 dark:bg-purple-950/40"
                     >
-                      {isOverallReleased ? 'Released' : 'Draft'}
+                      ✨ AI Draft (Unsaved)
                     </Badge>
+                  ) : data.feedback.overall ? (
+                    <div className="flex items-center gap-1.5">
+                      {data.feedback.overall.source === 'ai_draft' && (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] font-medium py-0 border-purple-300 text-purple-600 bg-purple-50/50 dark:bg-purple-950/20"
+                        >
+                          AI Draft
+                        </Badge>
+                      )}
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'text-[10px] font-medium py-0',
+                          isOverallReleased
+                            ? 'border-emerald-300 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/20'
+                            : 'border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/20'
+                        )}
+                      >
+                        {isOverallReleased ? 'Released' : 'Draft'}
+                      </Badge>
+                    </div>
                   ) : (
                     <Badge variant="outline" className="text-[10px] py-0 text-neutral-400">
                       Unsaved
@@ -381,6 +472,15 @@ export function AttemptFeedbackDialog({
                   </span>
                 </div>
               </div>
+
+              {aiDraftPending && (
+                <div className="flex items-center gap-2 text-xs text-purple-800 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 p-2.5 rounded-md border border-purple-200 dark:border-purple-800/80">
+                  <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+                  <span>
+                    AI suggested draft loaded. You can review and edit this comment before saving. Nothing will be visible to the student until you click <strong>Release</strong>.
+                  </span>
+                </div>
+              )}
 
               <Textarea
                 placeholder="Write overall guidance, encouragement, or syllabus advice for this student (max 1000 characters)..."

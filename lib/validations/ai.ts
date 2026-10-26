@@ -68,3 +68,15 @@ export const generateFromNotesInputSchema = z.object({
   level: z.enum(['easy', 'medium', 'hard']).default('medium'),
   text: z.string().max(50000, 'Text exceeds 50,000 character limit').optional().default(''),
 });
+
+// --- Feedback Suggestion Validation ---
+
+export const suggestFeedbackResponseSchema = z.object({
+  feedback: z
+    .string()
+    .trim()
+    .min(1, 'Feedback cannot be empty')
+    .max(1000, 'Feedback must be 1000 characters or fewer'),
+});
+
+export type SuggestFeedbackResponse = z.infer<typeof suggestFeedbackResponseSchema>;

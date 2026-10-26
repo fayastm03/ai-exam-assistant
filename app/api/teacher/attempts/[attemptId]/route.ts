@@ -121,12 +121,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
     id: string;
     comment: string;
     released: boolean;
+    source?: 'manual' | 'ai_draft';
     updated_at: string;
   } | null = null;
 
   const questionFeedbackMap: Record<
     string,
-    { id: string; comment: string; released: boolean; updated_at: string }
+    { id: string; comment: string; released: boolean; source?: 'manual' | 'ai_draft'; updated_at: string }
   > = {};
 
   (feedbackRows || []).forEach((f) => {
@@ -135,6 +136,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         id: f.id,
         comment: f.comment,
         released: f.released,
+        source: f.source,
         updated_at: f.updated_at,
       };
     } else {
@@ -142,6 +144,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         id: f.id,
         comment: f.comment,
         released: f.released,
+        source: f.source,
         updated_at: f.updated_at,
       };
     }

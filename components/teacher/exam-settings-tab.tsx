@@ -260,3 +260,4 @@ export function ExamSettingsTab({ exam, onExamUpdated }: ExamSettingsTabProps) {
     </Card>
   );
 }
+

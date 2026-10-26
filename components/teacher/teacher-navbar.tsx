@@ -77,3 +77,4 @@ export function TeacherNavbar({ userName }: TeacherNavbarProps) {
     </header>
   );
 }
+

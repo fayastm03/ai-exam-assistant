@@ -156,4 +156,23 @@ export const feedbackSaveSchema = z.object({
   source: z.enum(['manual', 'ai_draft']).default('manual'),
 });
 
+export const classCreateSchema = z.object({
+  name: z.string().trim().min(1, 'Class name is required').max(100, 'Class name cannot exceed 100 characters'),
+});
+
+export const classUpdateSchema = z.object({
+  name: z.string().trim().min(1, 'Class name cannot be empty').max(100, 'Class name cannot exceed 100 characters').optional(),
+  join_enabled: z.boolean().optional(),
+});
+
+export const classMemberUpdateSchema = z.object({
+  status: z.enum(['approved', 'rejected', 'removed'], {
+    message: "Status must be 'approved', 'rejected', or 'removed'",
+  }),
+});
+
+export const examAssignClassesSchema = z.object({
+  class_ids: z.array(z.string().uuid('Invalid class ID format')),
+});
+
 

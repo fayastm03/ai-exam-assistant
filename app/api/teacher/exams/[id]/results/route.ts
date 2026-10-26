@@ -53,7 +53,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const maxPossibleScore = questions.reduce((sum, q) => sum + (Number(q.marks) || 0), 0);
 
   // 3. Fetch all submitted or auto_submitted attempts with student profiles
-  const { data: attempts, error: attemptsError } = await supabase
+  const { data: rawAttempts, error: attemptsError } = await supabase
     .from('attempts')
     .select(`
       id,
@@ -74,6 +74,39 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   if (attemptsError) {
     return jsonError('Failed to fetch student attempts', 500);
+  }
+
+  // 3b. Optional class filter
+  const { searchParams } = new URL(request.url);
+  const classFilter = searchParams.get('class_id') || searchParams.get('classId');
+  let attempts = rawAttempts || [];
+
+  if (classFilter) {
+    // Verify the class belongs to this teacher
+    const { data: filterClass, error: fcError } = await supabase
+      .from('classes')
+      .select('id, name')
+      .eq('id', classFilter)
+      .eq('teacher_id', auth.user.id)
+      .single();
+
+    if (fcError || !filterClass) {
+      return jsonError('Class filter invalid or you do not have permission to view it', 404);
+    }
+
+    // Fetch student IDs who are approved members of this class
+    const { data: approvedMembers, error: memError } = await supabase
+      .from('class_members')
+      .select('student_id')
+      .eq('class_id', classFilter)
+      .eq('status', 'approved');
+
+    if (memError) {
+      return jsonError(memError.message, 500);
+    }
+
+    const approvedStudentIds = new Set((approvedMembers || []).map((m) => m.student_id));
+    attempts = attempts.filter((att) => approvedStudentIds.has(att.student_id));
   }
 
   // If no attempts submitted yet, return empty list and 0-accuracy question list

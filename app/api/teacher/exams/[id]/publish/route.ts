@@ -76,6 +76,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
     errors.push('Exam duration is required and must be greater than 0 minutes.');
   }
 
+  // 2b. Validate that exam is assigned to at least one class
+  const { data: examClasses, error: ecError } = await supabase
+    .from('exam_classes')
+    .select('class_id')
+    .eq('exam_id', id);
+
+  if (ecError) {
+    return jsonError(ecError.message, 500);
+  }
+
+  if (!examClasses || examClasses.length === 0) {
+    errors.push('Exam must be assigned to at least one class before it can be published.');
+  }
+
   // 3. Fetch questions
   const { data: questions, error: questionsError } = await supabase
     .from('questions')

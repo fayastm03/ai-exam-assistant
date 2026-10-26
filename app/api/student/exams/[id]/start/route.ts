@@ -30,6 +30,40 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return jsonError('Exam is not available or not published', 404);
   }
 
+  // 1b. Check that the student is approved in a class the exam is assigned to
+  const { data: assignedClasses, error: assignError } = await supabase
+    .from('exam_classes')
+    .select('class_id')
+    .eq('exam_id', examId);
+
+  if (assignError) {
+    return jsonError(assignError.message, 500);
+  }
+
+  const assignedClassIds = (assignedClasses || []).map((c) => c.class_id);
+  if (assignedClassIds.length === 0) {
+    return jsonError('Access denied: This exam is not assigned to any class', 403);
+  }
+
+  const { data: approvedMembership, error: memberCheckError } = await supabase
+    .from('class_members')
+    .select('id')
+    .in('class_id', assignedClassIds)
+    .eq('student_id', auth.user.id)
+    .eq('status', 'approved')
+    .limit(1);
+
+  if (memberCheckError) {
+    return jsonError(memberCheckError.message, 500);
+  }
+
+  if (!approvedMembership || approvedMembership.length === 0) {
+    return jsonError(
+      'Access denied: You must be an approved member of a class assigned to this exam',
+      403
+    );
+  }
+
   const now = new Date();
 
   // Check schedule window if defined

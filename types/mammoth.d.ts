@@ -14,3 +14,4 @@ declare module 'mammoth' {
   export function extractRawText(options: MammothOptions): Promise<MammothResult>;
   export function convertToHtml(options: MammothOptions): Promise<MammothResult>;
 }
+

@@ -21,3 +21,4 @@ export const extractedQuestionsResponseSchema = z.object({
 
 export type ExtractedQuestion = z.infer<typeof extractedQuestionSchema>;
 export type ExtractedQuestionsResponse = z.infer<typeof extractedQuestionsResponseSchema>;
+

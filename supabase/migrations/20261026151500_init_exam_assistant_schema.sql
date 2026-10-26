@@ -4,46 +4,21 @@
 -- Tables: profiles, exams, questions, attempts, attempt_answers, attempt_feedback
 -- Security: Row Level Security (RLS) on all tables with explicit comments
 -- Trigger: Automatic profile provisioning on auth.users signup
+-- Order:
+--   1. Extensions
+--   2. Tables Definition
+--   3. Foreign Key & Query Indexes
+--   4. Helper Functions
+--   5. Triggers
+--   6. Row-Level Security (RLS) & Policies
 -- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- 1. Extensions
+-- ------------------------------------------------------------------------------
 
 -- Enable standard UUID generation if not already enabled
 create extension if not exists "pgcrypto";
-
--- ------------------------------------------------------------------------------
--- 1. Helper Functions
--- ------------------------------------------------------------------------------
-
--- Generic updated_at timestamp refresher
-create or replace function public.handle_updated_at()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$;
-
--- Helper to check if current authenticated user has the 'teacher' role.
--- Defined as SECURITY DEFINER with empty search_path to prevent recursion on profiles RLS.
-create or replace function public.is_teacher()
-returns boolean
-language sql
-security definer
-stable
-set search_path = ''
-as $$
-  select exists (
-    select 1 from public.profiles
-    where id = (select auth.uid())
-      and role = 'teacher'
-  );
-$$;
-
-revoke execute on function public.is_teacher() from public;
-grant execute on function public.is_teacher() to authenticated;
 
 -- ------------------------------------------------------------------------------
 -- 2. Tables Definition
@@ -155,35 +130,42 @@ create index if not exists attempt_feedback_question_id_idx on public.attempt_fe
 create index if not exists attempt_feedback_released_idx on public.attempt_feedback (released);
 
 -- ------------------------------------------------------------------------------
--- 4. Triggers
+-- 4. Helper Functions
 -- ------------------------------------------------------------------------------
 
--- updated_at triggers
-create or replace trigger profiles_handle_updated_at
-  before update on public.profiles
-  for each row execute function public.handle_updated_at();
+-- Generic updated_at timestamp refresher
+create or replace function public.handle_updated_at()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
 
-create or replace trigger exams_handle_updated_at
-  before update on public.exams
-  for each row execute function public.handle_updated_at();
+-- Helper to check if current authenticated user has the 'teacher' role.
+-- Defined as SECURITY DEFINER with empty search_path to prevent recursion on profiles RLS.
+create or replace function public.is_teacher()
+returns boolean
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = (select auth.uid())
+      and role = 'teacher'
+  );
+$$;
 
-create or replace trigger questions_handle_updated_at
-  before update on public.questions
-  for each row execute function public.handle_updated_at();
+revoke execute on function public.is_teacher() from public;
+grant execute on function public.is_teacher() to authenticated;
 
-create or replace trigger attempts_handle_updated_at
-  before update on public.attempts
-  for each row execute function public.handle_updated_at();
-
-create or replace trigger attempt_answers_handle_updated_at
-  before update on public.attempt_answers
-  for each row execute function public.handle_updated_at();
-
-create or replace trigger attempt_feedback_handle_updated_at
-  before update on public.attempt_feedback
-  for each row execute function public.handle_updated_at();
-
--- Trigger: Automatically create a profile row upon new auth.users signup
+-- Function: Automatically create a profile row upon new auth.users signup
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -221,12 +203,42 @@ begin
 end;
 $$;
 
+-- ------------------------------------------------------------------------------
+-- 5. Triggers
+-- ------------------------------------------------------------------------------
+
+-- updated_at triggers
+create or replace trigger profiles_handle_updated_at
+  before update on public.profiles
+  for each row execute function public.handle_updated_at();
+
+create or replace trigger exams_handle_updated_at
+  before update on public.exams
+  for each row execute function public.handle_updated_at();
+
+create or replace trigger questions_handle_updated_at
+  before update on public.questions
+  for each row execute function public.handle_updated_at();
+
+create or replace trigger attempts_handle_updated_at
+  before update on public.attempts
+  for each row execute function public.handle_updated_at();
+
+create or replace trigger attempt_answers_handle_updated_at
+  before update on public.attempt_answers
+  for each row execute function public.handle_updated_at();
+
+create or replace trigger attempt_feedback_handle_updated_at
+  before update on public.attempt_feedback
+  for each row execute function public.handle_updated_at();
+
+-- Auth user trigger
 create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
 -- ------------------------------------------------------------------------------
--- 5. Row-Level Security (RLS)
+-- 6. Row-Level Security (RLS) & Policies
 -- ------------------------------------------------------------------------------
 
 alter table public.profiles enable row level security;
@@ -237,7 +249,7 @@ alter table public.attempt_answers enable row level security;
 alter table public.attempt_feedback enable row level security;
 
 -- ==============================================================================
--- 5.1 profiles Policies
+-- 6.1 profiles Policies
 -- ==============================================================================
 
 -- [Policy 1: profiles_select_own]
@@ -267,7 +279,7 @@ create policy profiles_update_own on public.profiles
   );
 
 -- ==============================================================================
--- 5.2 exams Policies
+-- 6.2 exams Policies
 -- ==============================================================================
 
 -- [Policy 1: exams_teacher_select]
@@ -310,7 +322,7 @@ create policy exams_teacher_delete on public.exams
   using ((select auth.uid()) = teacher_id);
 
 -- ==============================================================================
--- 5.3 questions Policies
+-- 6.3 questions Policies
 -- ==============================================================================
 -- IMPORTANT SECURITY NOTE ON QUESTIONS:
 -- As required by the system security design, students must NEVER read `correct_option`
@@ -384,7 +396,7 @@ create policy questions_teacher_delete on public.questions
   );
 
 -- ==============================================================================
--- 5.4 attempts Policies
+-- 6.4 attempts Policies
 -- ==============================================================================
 
 -- [Policy 1: attempts_student_select]
@@ -453,7 +465,7 @@ create policy attempts_teacher_update on public.attempts
   );
 
 -- ==============================================================================
--- 5.5 attempt_answers Policies
+-- 6.5 attempt_answers Policies
 -- ==============================================================================
 
 -- [Policy 1: attempt_answers_student_select]
@@ -520,7 +532,7 @@ create policy attempt_answers_student_update on public.attempt_answers
   );
 
 -- ==============================================================================
--- 5.6 attempt_feedback Policies
+-- 6.6 attempt_feedback Policies
 -- ==============================================================================
 
 -- [Policy 1: attempt_feedback_student_select]

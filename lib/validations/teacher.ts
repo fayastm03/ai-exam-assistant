@@ -136,3 +136,23 @@ export const bulkParseSchema = z.object({
   text: z.string().min(1, 'Input text cannot be empty'),
 });
 
+export const feedbackSaveSchema = z.object({
+  overallComment: z
+    .string()
+    .trim()
+    .max(1000, 'Overall comment must be 1000 characters or fewer')
+    .optional()
+    .nullable(),
+  questionComments: z
+    .array(
+      z.object({
+        questionId: z.string().uuid('Invalid question ID'),
+        comment: z.string().trim().max(1000, 'Question comment must be 1000 characters or fewer'),
+      })
+    )
+    .optional()
+    .default([]),
+  released: z.boolean().default(false),
+});
+
+

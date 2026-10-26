@@ -20,6 +20,7 @@ import {
   Loader2,
   AlertCircle,
   BookOpen,
+  MessageSquare,
 } from 'lucide-react';
 
 interface QuestionReview {
@@ -34,6 +35,7 @@ interface QuestionReview {
   chosen_option: string | null;
   status: 'correct' | 'wrong' | 'skipped';
   score_earned: number;
+  feedback: string | null;
 }
 
 interface TopicStat {
@@ -73,6 +75,10 @@ interface StudentResultData {
   topicPercentages: Record<string, number>;
   topics: Record<string, TopicStat>;
   weakTopics: string[];
+  feedback: {
+    overall: string | null;
+    byQuestion: Record<string, string>;
+  } | null;
   questions: QuestionReview[];
 }
 
@@ -455,6 +461,29 @@ export default function StudentExamResultPage({
         </div>
       </div>
 
+      {/* Teacher Released Feedback Card (Hidden if no released feedback) */}
+      {data.feedback?.overall && (
+        <Card className="border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 shadow-xs">
+          <CardHeader className="p-4 sm:p-5 pb-2">
+            <div className="flex items-center gap-2 text-blue-900 dark:text-blue-300 font-bold text-sm">
+              <MessageSquare className="w-4 h-4 text-blue-600" />
+              <span>Teacher Feedback</span>
+              <Badge
+                variant="outline"
+                className="border-blue-300 text-blue-700 bg-blue-50 dark:bg-blue-950/40 text-[10px] py-0 font-medium ml-1"
+              >
+                Personalized Review
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-5 pt-1">
+            <p className="text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap leading-relaxed">
+              {data.feedback.overall}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Question-by-Question Review */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200/80 dark:border-neutral-800 pb-3">
@@ -659,6 +688,19 @@ export default function StudentExamResultPage({
                         );
                       })}
                     </div>
+
+                    {/* Teacher's Released Feedback for this Question */}
+                    {q.feedback && (
+                      <div className="mt-3 p-3.5 rounded-lg bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/50 text-xs">
+                        <div className="flex items-center gap-1.5 font-semibold text-amber-900 dark:text-amber-300 mb-1">
+                          <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
+                          Teacher Note on Question {q.number}
+                        </div>
+                        <p className="text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap leading-relaxed">
+                          {q.feedback}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Official Explanation */}
                     {q.explanation && (

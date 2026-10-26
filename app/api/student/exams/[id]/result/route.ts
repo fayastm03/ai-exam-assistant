@@ -93,7 +93,28 @@ export async function GET(request: NextRequest, context: RouteContext) {
     timeTakenSeconds = Math.max(0, Math.floor((submitMs - startMs) / 1000));
   }
 
-  // 8. Build question review list
+  // 8. Fetch released feedback ONLY (drafts are never exposed to students)
+  const { data: releasedFeedback } = await supabase
+    .from('attempt_feedback')
+    .select('id, question_id, comment, updated_at')
+    .eq('attempt_id', attempt.id)
+    .eq('released', true);
+
+  let overallFeedback: string | null = null;
+  const questionFeedbackMap: Record<string, string> = {};
+
+  (releasedFeedback || []).forEach((f) => {
+    if (!f.question_id) {
+      overallFeedback = f.comment;
+    } else {
+      questionFeedbackMap[f.question_id] = f.comment;
+    }
+  });
+
+  const hasReleasedFeedback =
+    overallFeedback !== null || Object.keys(questionFeedbackMap).length > 0;
+
+  // 9. Build question review list
   const questionMap = new Map(scoreResult.questionResults.map((r) => [r.questionId, r]));
 
   const questionReviews = questions.map((q) => {
@@ -110,6 +131,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       chosen_option: qResult?.chosenOption ?? null,
       status: qResult?.status ?? 'skipped',
       score_earned: qResult?.scoreEarned ?? 0,
+      feedback: questionFeedbackMap[q.id] || null,
     };
   });
 
@@ -139,6 +161,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
     topicPercentages: scoreResult.topicPercentages,
     topics: scoreResult.topics,
     weakTopics: scoreResult.weakTopics,
+    feedback: hasReleasedFeedback
+      ? {
+          overall: overallFeedback,
+          byQuestion: questionFeedbackMap,
+        }
+      : null,
     questions: questionReviews,
   });
 }

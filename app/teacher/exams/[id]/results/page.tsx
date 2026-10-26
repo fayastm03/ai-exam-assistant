@@ -21,7 +21,9 @@ import {
   BarChart3,
   ListOrdered,
   FileSpreadsheet,
+  MessageSquare,
 } from 'lucide-react';
+import { AttemptFeedbackDialog } from '@/components/teacher/attempt-feedback-dialog';
 
 interface StudentResultItem {
   attemptId: string;
@@ -96,6 +98,7 @@ export default function TeacherExamResultsPage({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeView, setActiveView] = useState<'students' | 'accuracy'>('students');
+  const [selectedAttemptId, setSelectedAttemptId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchResults = useCallback(() => {
@@ -376,15 +379,18 @@ export default function TeacherExamResultsPage({
                   <th scope="col" className="px-4 py-3 text-center">
                     Status
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right">
+                  <th scope="col" className="px-4 py-3 text-center">
                     Submitted At
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right">
+                    Feedback & Review
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200/60 dark:divide-neutral-800">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-neutral-500 text-xs">
+                    <td colSpan={8} className="px-4 py-8 text-center text-neutral-500 text-xs">
                       No students matching &quot;{searchQuery}&quot; found.
                     </td>
                   </tr>
@@ -392,7 +398,8 @@ export default function TeacherExamResultsPage({
                   filteredStudents.map((s) => (
                     <tr
                       key={s.attemptId}
-                      className="hover:bg-neutral-50/80 dark:hover:bg-neutral-900/40 transition-colors"
+                      onClick={() => setSelectedAttemptId(s.attemptId)}
+                      className="hover:bg-blue-50/50 dark:hover:bg-neutral-800/60 cursor-pointer transition-colors"
                     >
                       <td className="px-4 py-3 font-semibold text-neutral-900 dark:text-neutral-100">
                         {s.studentName}
@@ -447,12 +454,27 @@ export default function TeacherExamResultsPage({
                         </Badge>
                       </td>
 
-                      <td className="px-4 py-3 text-right text-neutral-500 text-[11px]">
+                      <td className="px-4 py-3 text-center text-neutral-500 text-[11px]">
                         {new Date(s.submittedAt).toLocaleDateString()}{' '}
                         {new Date(s.submittedAt).toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedAttemptId(s.attemptId);
+                          }}
+                          className="h-7 text-xs shadow-xs hover:border-blue-500 hover:text-blue-600"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 mr-1 text-blue-600" />
+                          Feedback
+                        </Button>
                       </td>
                     </tr>
                   ))
@@ -596,6 +618,17 @@ export default function TeacherExamResultsPage({
           </div>
         </div>
       )}
+
+      {/* Student Attempt Review & Feedback Dialog */}
+      <AttemptFeedbackDialog
+        key={selectedAttemptId || 'none'}
+        attemptId={selectedAttemptId}
+        open={Boolean(selectedAttemptId)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setSelectedAttemptId(null);
+        }}
+        onFeedbackSaved={fetchResults}
+      />
     </div>
   );
 }

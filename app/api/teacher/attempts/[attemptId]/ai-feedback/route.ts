@@ -4,6 +4,8 @@ import { jsonError, jsonSuccess } from '@/lib/api-response';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { generateStudentFeedback } from '@/lib/ai/student-feedback';
 
+export const maxDuration = 60;
+
 interface RouteContext {
   params: Promise<{ attemptId: string }>;
 }

@@ -288,7 +288,7 @@ export function PaperImportTab({ examId, onImportCompleted }: PaperImportTabProp
                     {file ? file.name : 'Click to select or drag and drop a paper'}
                   </span>
                   <p className="text-xs text-neutral-500 mt-1">
-                    Accepts PDF, DOCX (Word), PNG, and JPG up to 10MB
+                    Accepts PDF, DOCX (Word), PNG, and JPG up to 4MB (Vercel payload limit)
                   </p>
                 </div>
               </label>

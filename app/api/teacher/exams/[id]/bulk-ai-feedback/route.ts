@@ -4,6 +4,8 @@ import { jsonError, jsonSuccess } from '@/lib/api-response';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { generateStudentFeedback } from '@/lib/ai/student-feedback';
 
+export const maxDuration = 60;
+
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
@@ -100,8 +102,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
   }
 
-  // 4. Take a batch of at most 20 attempts
-  const batchSize = 20;
+  // 4. Take a batch of at most 5 attempts (sized to finish safely inside Vercel's 60s maxDuration)
+  const batchSize = 5;
   const batch = pendingAttempts.slice(0, batchSize);
 
   let processedCount = 0;

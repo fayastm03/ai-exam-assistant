@@ -26,7 +26,7 @@ interface GenerateNotesTabProps {
   onNavigateToQuestions?: () => void;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB (Vercel payload limit)
 const MAX_TEXT_LENGTH = 50000;
 
 export function GenerateNotesTab({
@@ -53,7 +53,7 @@ export function GenerateNotesTab({
     if (!file) return;
 
     if (file.size > MAX_FILE_SIZE) {
-      setErrorMsg('File exceeds the 10MB limit. Please upload a smaller document.');
+      setErrorMsg('File exceeds the 4MB limit (Vercel request limit is 4.5MB). Please upload a smaller document.');
       return;
     }
 
@@ -344,7 +344,7 @@ export function GenerateNotesTab({
                   Click to select a document or photo
                 </p>
                 <p className="text-[11px] text-neutral-400 mt-0.5">
-                  Supports PDF, Word (.docx), PNG, JPG (up to 10MB)
+                  Supports PDF, Word (.docx), PNG, JPG (up to 4MB)
                 </p>
                 <input
                   ref={fileInputRef}

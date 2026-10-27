@@ -7,6 +7,8 @@ import { getAIProvider } from '@/lib/ai/provider';
 import { loadPrompt } from '@/lib/ai/prompts';
 import { suggestFeedbackResponseSchema } from '@/lib/validations/ai';
 
+export const maxDuration = 60;
+
 interface RouteContext {
   params: Promise<{ attemptId: string }>;
 }

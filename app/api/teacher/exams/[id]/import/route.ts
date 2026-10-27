@@ -5,11 +5,13 @@ import { createServiceRoleClient } from '@/lib/supabase/server';
 import { extractQuestionsFromFile } from '@/lib/ai/paper-extractor';
 import { ExtractedQuestion } from '@/lib/validations/ai';
 
+export const maxDuration = 60;
+
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB safe limit (Vercel payload maximum is 4.5MB)
 
 const ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
@@ -73,7 +75,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   // 3. Validate file size and type
   if (file.size > MAX_FILE_SIZE) {
-    return jsonError('File size exceeds the 10MB limit', 413);
+    return jsonError('File size exceeds the 4MB limit (Vercel serverless request body limit is 4.5MB)', 413);
   }
 
   if (!isAllowedFile(file)) {

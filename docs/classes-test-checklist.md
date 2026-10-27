@@ -189,3 +189,4 @@ npm run seed
 - [ ] **TC-UI-S15: Exam Start Access Denial (403)**
   - **Action:** While student is on the exam instructions page (`/exams/<id>`), teacher removes student from class. Student clicks "Start Exam".
   - **Expected Result:** Page displays an inline alert: *"Access denied: You must be an approved member of a class assigned to this exam. Your membership may have been removed or is pending approval."* with buttons to "View My Classes" and "Back to Available Exams". The page does not crash or show an unhandled error screen.
+

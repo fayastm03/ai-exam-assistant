@@ -103,6 +103,11 @@ export default function StudentExamResultPage({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'correct' | 'wrong' | 'skipped'>('all');
 
+  // Automated AI Feedback states
+  const [aiFeedback, setAiFeedback] = useState<string | null>(null);
+  const [aiFeedbackLoading, setAiFeedbackLoading] = useState<boolean>(true);
+  const [aiFeedbackSource, setAiFeedbackSource] = useState<'ai_auto' | 'auto_template' | null>(null);
+
   useEffect(() => {
     let ignore = false;
 
@@ -137,6 +142,52 @@ export default function StudentExamResultPage({
       ignore = true;
     };
   }, [examId]);
+
+  // Fetch or generate student automated AI feedback once attempt is confirmed submitted
+  useEffect(() => {
+    if (!data?.attempt) return;
+    if (data.attempt.status !== 'submitted' && data.attempt.status !== 'auto_submitted') {
+      setAiFeedbackLoading(false);
+      return;
+    }
+
+    let ignore = false;
+
+    async function loadAiFeedback() {
+      setAiFeedbackLoading(true);
+      try {
+        const res = await fetch(`/api/student/exams/${examId}/ai-feedback`, {
+          cache: 'no-store',
+        });
+        const json = await res.json();
+
+        if (!ignore) {
+          if (res.ok && !json.hidden && json.feedback) {
+            setAiFeedback(json.feedback);
+            setAiFeedbackSource(json.source || 'ai_auto');
+          } else {
+            setAiFeedback(null);
+            setAiFeedbackSource(null);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching student AI feedback:', err);
+        if (!ignore) {
+          setAiFeedback(null);
+        }
+      } finally {
+        if (!ignore) {
+          setAiFeedbackLoading(false);
+        }
+      }
+    }
+
+    loadAiFeedback();
+
+    return () => {
+      ignore = true;
+    };
+  }, [examId, data?.attempt?.status]);
 
   if (loading) {
     return (
@@ -460,6 +511,43 @@ export default function StudentExamResultPage({
           </Card>
         </div>
       </div>
+
+      {/* Automated AI Feedback Card */}
+      {(aiFeedbackLoading || aiFeedback) && (
+        <Card className="border-purple-200/80 dark:border-purple-900/60 bg-purple-50/40 dark:bg-purple-950/20 shadow-xs">
+          <CardHeader className="p-4 sm:p-5 pb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+              <div className="flex items-center gap-2 text-purple-900 dark:text-purple-300 font-bold text-sm">
+                <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+                <span>AI feedback</span>
+                {aiFeedbackSource === 'auto_template' && (
+                  <Badge
+                    variant="outline"
+                    className="border-neutral-300 text-neutral-600 dark:text-neutral-400 text-[10px] py-0 font-normal ml-1"
+                  >
+                    Template Summary
+                  </Badge>
+                )}
+              </div>
+              <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                Written by AI from your results. Marks are calculated by the system.
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-5 pt-1">
+            {aiFeedbackLoading ? (
+              <div className="flex items-center gap-2 py-3 text-xs text-purple-700 dark:text-purple-300">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600 shrink-0" />
+                <span>Generating personalized AI feedback from your performance...</span>
+              </div>
+            ) : (
+              <p className="text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap leading-relaxed">
+                {aiFeedback}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Teacher Released Feedback Card (Hidden if no released feedback) */}
       {data.feedback?.overall && (

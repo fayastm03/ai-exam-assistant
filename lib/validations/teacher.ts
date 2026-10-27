@@ -153,7 +153,7 @@ export const feedbackSaveSchema = z.object({
     .optional()
     .default([]),
   released: z.boolean().default(false),
-  source: z.enum(['manual', 'ai_draft']).default('manual'),
+  source: z.enum(['manual', 'ai_draft', 'ai_auto', 'auto_template']).default('manual'),
 });
 
 export const classCreateSchema = z.object({

@@ -126,29 +126,47 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return jsonError('Failed to fetch feedback', 500);
   }
 
-  // Separate overall vs question-specific feedback
+  // Separate teacher's overall feedback, student automatic AI feedback, and question comments
   let overallFeedback: {
     id: string;
     comment: string;
     released: boolean;
-    source?: 'manual' | 'ai_draft';
+    source?: string;
+    updated_at: string;
+  } | null = null;
+
+  let aiAutoFeedback: {
+    id: string;
+    comment: string;
+    released: boolean;
+    source: 'ai_auto' | 'auto_template';
     updated_at: string;
   } | null = null;
 
   const questionFeedbackMap: Record<
     string,
-    { id: string; comment: string; released: boolean; source?: 'manual' | 'ai_draft'; updated_at: string }
+    { id: string; comment: string; released: boolean; source?: string; updated_at: string }
   > = {};
 
   (feedbackRows || []).forEach((f) => {
     if (!f.question_id) {
-      overallFeedback = {
-        id: f.id,
-        comment: f.comment,
-        released: f.released,
-        source: f.source,
-        updated_at: f.updated_at,
-      };
+      if (f.source === 'ai_auto' || f.source === 'auto_template') {
+        aiAutoFeedback = {
+          id: f.id,
+          comment: f.comment,
+          released: f.released,
+          source: f.source as 'ai_auto' | 'auto_template',
+          updated_at: f.updated_at,
+        };
+      } else {
+        overallFeedback = {
+          id: f.id,
+          comment: f.comment,
+          released: f.released,
+          source: f.source,
+          updated_at: f.updated_at,
+        };
+      }
     } else {
       questionFeedbackMap[f.question_id] = {
         id: f.id,
@@ -212,6 +230,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     },
     feedback: {
       overall: overallFeedback,
+      aiAuto: aiAutoFeedback,
       byQuestion: questionFeedbackMap,
     },
     questions: questionReviews,

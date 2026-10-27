@@ -80,3 +80,29 @@ export const suggestFeedbackResponseSchema = z.object({
 });
 
 export type SuggestFeedbackResponse = z.infer<typeof suggestFeedbackResponseSchema>;
+
+// --- Student Automated Feedback Validation ---
+
+export function trimFeedbackAtSentenceEnd(text: string, maxLength: number = 1000): string {
+  const trimmed = text.trim();
+  if (trimmed.length <= maxLength) return trimmed;
+  const chunk = trimmed.slice(0, maxLength);
+  const lastDot = chunk.lastIndexOf('.');
+  const lastExcl = chunk.lastIndexOf('!');
+  const lastQ = chunk.lastIndexOf('?');
+  const lastPunct = Math.max(lastDot, lastExcl, lastQ);
+  if (lastPunct > 50) {
+    return chunk.slice(0, lastPunct + 1).trim();
+  }
+  return chunk.trim();
+}
+
+export const studentFeedbackResponseSchema = z.object({
+  feedback: z
+    .string()
+    .trim()
+    .min(1, 'Feedback cannot be empty')
+    .transform((val) => trimFeedbackAtSentenceEnd(val, 1000)),
+});
+
+export type StudentFeedbackResponse = z.infer<typeof studentFeedbackResponseSchema>;

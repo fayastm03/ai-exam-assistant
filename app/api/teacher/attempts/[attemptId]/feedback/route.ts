@@ -74,16 +74,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const now = new Date().toISOString();
 
   // 4. Handle Overall Comment (question_id is NULL)
-  const { data: existingOverall } = await supabase
+  const { data: existingOverall, error: selOverallErr } = await supabase
     .from('attempt_feedback')
     .select('id')
     .eq('attempt_id', attempt.id)
     .is('question_id', null)
     .maybeSingle();
 
+  if (selOverallErr) {
+    return jsonError('Failed to query existing feedback: ' + selOverallErr.message, 500);
+  }
+
   if (overallComment && overallComment.trim().length > 0) {
     if (existingOverall) {
-      await supabase
+      const { error: updErr } = await supabase
         .from('attempt_feedback')
         .update({
           comment: overallComment.trim(),
@@ -93,8 +97,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
           updated_at: now,
         })
         .eq('id', existingOverall.id);
+      if (updErr) {
+        return jsonError('Failed to update overall feedback: ' + updErr.message, 500);
+      }
     } else {
-      await supabase.from('attempt_feedback').insert({
+      const { error: insErr } = await supabase.from('attempt_feedback').insert({
         attempt_id: attempt.id,
         teacher_id: auth.user.id,
         question_id: null,
@@ -104,24 +111,34 @@ export async function POST(request: NextRequest, context: RouteContext) {
         created_at: now,
         updated_at: now,
       });
+      if (insErr) {
+        return jsonError('Failed to save overall feedback: ' + insErr.message, 500);
+      }
     }
   } else if (existingOverall) {
     // If overall comment was cleared, remove the record
-    await supabase.from('attempt_feedback').delete().eq('id', existingOverall.id);
+    const { error: delErr } = await supabase.from('attempt_feedback').delete().eq('id', existingOverall.id);
+    if (delErr) {
+      return jsonError('Failed to delete overall feedback: ' + delErr.message, 500);
+    }
   }
 
   // 5. Handle Per-Question Comments
   for (const qComment of questionComments) {
-    const { data: existingQuestionFb } = await supabase
+    const { data: existingQuestionFb, error: selQErr } = await supabase
       .from('attempt_feedback')
       .select('id')
       .eq('attempt_id', attempt.id)
       .eq('question_id', qComment.questionId)
       .maybeSingle();
 
+    if (selQErr) {
+      return jsonError('Failed to query question feedback: ' + selQErr.message, 500);
+    }
+
     if (qComment.comment && qComment.comment.trim().length > 0) {
       if (existingQuestionFb) {
-        await supabase
+        const { error: updQErr } = await supabase
           .from('attempt_feedback')
           .update({
             comment: qComment.comment.trim(),
@@ -131,8 +148,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
             updated_at: now,
           })
           .eq('id', existingQuestionFb.id);
+        if (updQErr) {
+          return jsonError('Failed to update question feedback: ' + updQErr.message, 500);
+        }
       } else {
-        await supabase.from('attempt_feedback').insert({
+        const { error: insQErr } = await supabase.from('attempt_feedback').insert({
           attempt_id: attempt.id,
           teacher_id: auth.user.id,
           question_id: qComment.questionId,
@@ -142,10 +162,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
           created_at: now,
           updated_at: now,
         });
+        if (insQErr) {
+          return jsonError('Failed to save question feedback: ' + insQErr.message, 500);
+        }
       }
     } else if (existingQuestionFb) {
       // If question comment was cleared, delete the row
-      await supabase.from('attempt_feedback').delete().eq('id', existingQuestionFb.id);
+      const { error: delQErr } = await supabase.from('attempt_feedback').delete().eq('id', existingQuestionFb.id);
+      if (delQErr) {
+        return jsonError('Failed to delete question feedback: ' + delQErr.message, 500);
+      }
     }
   }
 

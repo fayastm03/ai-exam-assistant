@@ -26,6 +26,9 @@ import {
   Save,
   MessageSquare,
   Sparkles,
+  RefreshCw,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 interface AttemptFeedbackData {
@@ -57,12 +60,19 @@ interface AttemptFeedbackData {
       id: string;
       comment: string;
       released: boolean;
-      source?: 'manual' | 'ai_draft';
+      source?: string;
+      updated_at: string;
+    } | null;
+    aiAuto?: {
+      id: string;
+      comment: string;
+      released: boolean;
+      source: 'ai_auto' | 'auto_template';
       updated_at: string;
     } | null;
     byQuestion: Record<
       string,
-      { id: string; comment: string; released: boolean; source?: 'manual' | 'ai_draft'; updated_at: string }
+      { id: string; comment: string; released: boolean; source?: string; updated_at: string }
     >;
   };
   questions: {
@@ -120,6 +130,10 @@ export function AttemptFeedbackDialog({
   const [suggesting, setSuggesting] = useState(false);
   const [aiDraftPending, setAiDraftPending] = useState(false);
 
+  // Student Automated AI Feedback management states
+  const [togglingAiVisibility, setTogglingAiVisibility] = useState(false);
+  const [regeneratingAiFeedback, setRegeneratingAiFeedback] = useState(false);
+
   useEffect(() => {
     if (!open || !attemptId) return;
 
@@ -142,7 +156,8 @@ export function AttemptFeedbackDialog({
             throw new Error(json.message || 'Failed to load attempt details');
           }
           setData(json);
-          setOverallComment(json.feedback?.overall?.comment || '');
+          // Only populate if teacher has not typed or received a suggestion
+          setOverallComment((prev) => (prev && prev.trim().length > 0 ? prev : (json.feedback?.overall?.comment || '')));
 
           const qComments: Record<string, string> = {};
           if (json.feedback?.byQuestion) {
@@ -192,7 +207,11 @@ export function AttemptFeedbackDialog({
         throw new Error(json.message || 'Failed to generate feedback suggestion');
       }
 
-      const suggestedText = json.data?.feedback || '';
+      const suggestedText =
+        typeof json.feedback === 'string' ? json.feedback.trim() : (json.data?.feedback || '');
+      if (!suggestedText) {
+        throw new Error('AI returned an empty feedback suggestion');
+      }
       setOverallComment(suggestedText);
       setAiDraftPending(true);
       setSuccessMsg('AI draft feedback suggested! You can review and edit it before saving.');
@@ -266,6 +285,64 @@ export function AttemptFeedbackDialog({
       setErrorMsg(err instanceof Error ? err.message : 'Error saving feedback');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleAiVisibility = async () => {
+    if (!attemptId) return;
+    setTogglingAiVisibility(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const res = await fetch(`/api/teacher/attempts/${attemptId}/ai-feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle_visibility' }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.message || 'Failed to toggle AI feedback visibility');
+      }
+      const refreshRes = await fetch(`/api/teacher/attempts/${attemptId}`, { cache: 'no-store' });
+      if (refreshRes.ok) {
+        const refreshJson = await refreshRes.json();
+        setData(refreshJson);
+      }
+      setSuccessMsg(json.message || 'Updated AI feedback visibility');
+      if (onFeedbackSaved) onFeedbackSaved();
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Error updating AI feedback visibility');
+    } finally {
+      setTogglingAiVisibility(false);
+    }
+  };
+
+  const handleRegenerateAiFeedback = async () => {
+    if (!attemptId) return;
+    setRegeneratingAiFeedback(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const res = await fetch(`/api/teacher/attempts/${attemptId}/ai-feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'regenerate' }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.message || 'Failed to regenerate AI feedback');
+      }
+      const refreshRes = await fetch(`/api/teacher/attempts/${attemptId}`, { cache: 'no-store' });
+      if (refreshRes.ok) {
+        const refreshJson = await refreshRes.json();
+        setData(refreshJson);
+      }
+      setSuccessMsg('AI feedback regenerated successfully');
+      if (onFeedbackSaved) onFeedbackSaved();
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Error regenerating AI feedback');
+    } finally {
+      setRegeneratingAiFeedback(false);
     }
   };
 
@@ -392,6 +469,102 @@ export function AttemptFeedbackDialog({
                 )}
               </div>
             </div>
+
+            {/* Student Automatic AI Feedback Row */}
+            {data.feedback?.aiAuto ? (
+              <div className="p-4 rounded-xl border border-purple-200/80 dark:border-purple-900/60 bg-purple-50/30 dark:bg-purple-950/10 space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-purple-900 dark:text-purple-200">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                      <span>Student Automated Feedback</span>
+                    </div>
+
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-mono py-0 border-purple-300 text-purple-700 bg-purple-50 dark:bg-purple-950/40"
+                    >
+                      {data.feedback.aiAuto.source}
+                    </Badge>
+
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'text-[10px] py-0 font-medium',
+                        data.feedback.aiAuto.released
+                          ? 'border-emerald-300 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/20'
+                          : 'border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/20'
+                      )}
+                    >
+                      {data.feedback.aiAuto.released ? 'Visible to Student' : 'Hidden from Student'}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleToggleAiVisibility}
+                      disabled={togglingAiVisibility || regeneratingAiFeedback}
+                      className="h-7 text-xs border-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    >
+                      {togglingAiVisibility ? (
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      ) : data.feedback.aiAuto.released ? (
+                        <EyeOff className="w-3 h-3 mr-1 text-amber-600" />
+                      ) : (
+                        <Eye className="w-3 h-3 mr-1 text-emerald-600" />
+                      )}
+                      {data.feedback.aiAuto.released ? 'Hide from student' : 'Show to student'}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRegenerateAiFeedback}
+                      disabled={togglingAiVisibility || regeneratingAiFeedback}
+                      className="h-7 text-xs border-purple-300 text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/30"
+                      title="Regenerate automatic AI feedback (max once per minute)"
+                    >
+                      {regeneratingAiFeedback ? (
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-3 h-3 mr-1 text-purple-600" />
+                      )}
+                      Regenerate
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-white/80 dark:bg-neutral-900/80 border border-purple-100 dark:border-purple-900/40 text-xs text-neutral-800 dark:text-neutral-200 leading-relaxed whitespace-pre-wrap">
+                  {data.feedback.aiAuto.comment}
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 flex items-center justify-between text-xs text-neutral-500">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-neutral-400" />
+                  <span>Student Automated Feedback: Not yet generated.</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRegenerateAiFeedback}
+                  disabled={regeneratingAiFeedback}
+                  className="h-7 text-xs"
+                >
+                  {regeneratingAiFeedback ? (
+                    <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                  ) : (
+                    <Sparkles className="w-3 h-3 mr-1 text-purple-600" />
+                  )}
+                  Generate now
+                </Button>
+              </div>
+            )}
 
             {/* Overall Feedback Form */}
             <div className="p-4 rounded-xl border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/30 dark:bg-blue-950/10 space-y-3">

@@ -22,6 +22,8 @@ import {
   ListOrdered,
   FileSpreadsheet,
   MessageSquare,
+  Sparkles,
+  AlertTriangle,
 } from 'lucide-react';
 import { AttemptFeedbackDialog } from '@/components/teacher/attempt-feedback-dialog';
 
@@ -125,6 +127,69 @@ export default function TeacherExamResultsPage({
     setLoading(true);
     setRefreshKey((k) => k + 1);
   }, []);
+
+  // Bulk AI Feedback Generation states
+  const [bulkGenerating, setBulkGenerating] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{
+    processed: number;
+    total: number;
+    failed: number;
+    message?: string;
+  } | null>(null);
+  const [bulkRateLimited, setBulkRateLimited] = useState(false);
+
+  const handleBulkGenerateAiFeedback = async () => {
+    setBulkGenerating(true);
+    setBulkRateLimited(false);
+    setBulkProgress(null);
+
+    let totalDone = 0;
+    let totalFailed = 0;
+
+    try {
+      while (true) {
+        const res = await fetch(`/api/teacher/exams/${examId}/bulk-ai-feedback`, {
+          method: 'POST',
+        });
+        const json = await res.json();
+
+        if (!res.ok) {
+          throw new Error(json.message || 'Failed to generate bulk AI feedback');
+        }
+
+        totalDone += json.batchProcessed || 0;
+        totalFailed += json.failedCount || 0;
+        const totalEligible = (json.totalWithFeedback || 0) + (json.totalRemaining || 0);
+
+        setBulkProgress({
+          processed: json.totalWithFeedback || totalDone,
+          total: totalEligible,
+          failed: totalFailed,
+          message: json.message,
+        });
+
+        if (json.rateLimited) {
+          setBulkRateLimited(true);
+          break;
+        }
+
+        if (json.done || json.totalRemaining === 0) {
+          break;
+        }
+      }
+    } catch (err: unknown) {
+      console.error('Error during bulk AI feedback generation:', err);
+      setBulkProgress((prev) => ({
+        processed: prev?.processed ?? totalDone,
+        total: prev?.total ?? totalDone,
+        failed: totalFailed,
+        message: err instanceof Error ? err.message : 'Error generating bulk feedback',
+      }));
+    } finally {
+      setBulkGenerating(false);
+      fetchResults();
+    }
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -261,15 +326,61 @@ export default function TeacherExamResultsPage({
           <Button
             variant="outline"
             size="sm"
+            onClick={handleBulkGenerateAiFeedback}
+            disabled={bulkGenerating || loading || stats.totalSubmissions === 0}
+            className="text-xs h-8 shadow-xs border-purple-300 text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/30"
+            title="Generate student automated feedback for all submitted attempts"
+          >
+            {bulkGenerating ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                {bulkProgress ? `${bulkProgress.processed}/${bulkProgress.total} done` : 'Generating...'}
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5 mr-1.5 text-purple-600" />
+                Generate AI feedback for all students
+              </>
+            )}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
             onClick={fetchResults}
             className="text-xs h-8 shadow-xs"
-            disabled={loading}
+            disabled={loading || bulkGenerating}
           >
             <RotateCw className="w-3.5 h-3.5 mr-1.5" />
             Refresh
           </Button>
         </div>
       </div>
+
+      {/* Bulk AI Feedback Progress / Rate Limit Banners */}
+      {bulkRateLimited && (
+        <Alert variant="destructive" className="border-amber-300 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-xs font-semibold">Rate limit reached</AlertTitle>
+          <AlertDescription className="text-xs">
+            Rate limit reached, try again in a minute. ({bulkProgress?.processed ?? 0} generated so far).
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {bulkProgress && !bulkRateLimited && (
+        <Alert className="border-purple-200 bg-purple-50/50 dark:bg-purple-950/20 text-purple-900 dark:text-purple-200">
+          <Sparkles className="h-4 w-4 text-purple-600" />
+          <AlertTitle className="text-xs font-semibold">
+            {bulkGenerating ? 'Generating Automated AI Feedback' : 'Bulk AI Feedback Status'}
+          </AlertTitle>
+          <AlertDescription className="text-xs">
+            {bulkProgress.processed} of {bulkProgress.total} done
+            {bulkProgress.failed > 0 && ` (${bulkProgress.failed} failed/skipped)`}.
+            {bulkProgress.message && ` ${bulkProgress.message}.`}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Aggregate Overview Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

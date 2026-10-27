@@ -103,7 +103,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   // 8. Fetch released feedback ONLY (drafts are never exposed to students)
   const { data: releasedFeedback } = await supabase
     .from('attempt_feedback')
-    .select('id, question_id, comment, updated_at')
+    .select('id, question_id, comment, source, updated_at')
     .eq('attempt_id', attempt.id)
     .eq('released', true);
 
@@ -112,7 +112,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   (releasedFeedback || []).forEach((f) => {
     if (!f.question_id) {
-      overallFeedback = f.comment;
+      // Teacher feedback card strictly shows manual or teacher-edited draft comments
+      if (f.source === 'manual' || f.source === 'ai_draft') {
+        overallFeedback = f.comment;
+      }
     } else {
       questionFeedbackMap[f.question_id] = f.comment;
     }

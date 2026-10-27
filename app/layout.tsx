@@ -19,7 +19,12 @@ export const metadata: Metadata = {
   },
   description: "Intelligent examination platform with automated scoring, classroom management, and AI-powered feedback.",
   icons: {
-    icon: "/icon.svg",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
   },
 };
 

@@ -1,10 +1,15 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { connection } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { TeacherNavbar } from '@/components/teacher/teacher-navbar';
+
+export const metadata: Metadata = {
+  title: 'Teacher Portal',
+};
 
 export const instant = false;
 

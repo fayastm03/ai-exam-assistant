@@ -267,4 +267,23 @@ describe('Phase 6: App Hardening & Edge Cases', () => {
       expect(data500.stack).toBeUndefined();
     });
   });
+
+  describe('Edge Case 24: Bulk Question Approval', () => {
+    it('filters draft questions eligible for approval and excludes unset options', () => {
+      const mockQuestions = [
+        { id: 'q1', review_status: 'draft', correct_option: 'A' },
+        { id: 'q2', review_status: 'draft', correct_option: 'B' },
+        { id: 'q3', review_status: 'draft', correct_option: 'UNSET' },
+        { id: 'q4', review_status: 'draft', correct_option: '' },
+        { id: 'q5', review_status: 'approved', correct_option: 'C' },
+      ];
+
+      const eligibleForApproval = mockQuestions.filter(
+        (q) => q.review_status === 'draft' && q.correct_option && q.correct_option !== 'UNSET'
+      );
+
+      expect(eligibleForApproval).toHaveLength(2);
+      expect(eligibleForApproval.map((q) => q.id)).toEqual(['q1', 'q2']);
+    });
+  });
 });

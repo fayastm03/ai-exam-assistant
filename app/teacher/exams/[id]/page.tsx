@@ -32,6 +32,7 @@ import {
   BarChart3,
   Sparkles,
   CheckCircle2,
+  CheckCheck,
 } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { mapApiError, MESSAGES } from '@/lib/messages';
@@ -99,6 +100,7 @@ export default function TeacherExamDetailPage({
   // Deleting question id state
   const [deletingQId, setDeletingQId] = useState<string | null>(null);
   const [reordering, setReordering] = useState(false);
+  const [approvingAll, setApprovingAll] = useState(false);
 
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -240,6 +242,38 @@ export default function TeacherExamDetailPage({
       toast.error(mapApiError(err, 'Failed to reorder questions.').message);
     } finally {
       setReordering(false);
+    }
+  };
+
+  const draftQuestions = questions.filter(
+    (q) => q.review_status === 'draft' && q.correct_option && q.correct_option !== 'UNSET'
+  );
+  const draftCount = draftQuestions.length;
+
+  const handleApproveAllQuestions = async () => {
+    if (draftCount === 0 || approvingAll) return;
+    setApprovingAll(true);
+    try {
+      const res = await fetch(`/api/teacher/exams/${examId}/questions`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve_all' }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to approve questions');
+      }
+      await fetchExamData();
+      const count = data.count ?? draftCount;
+      toast.success(
+        count === 1
+          ? '1 question approved.'
+          : `All ${count} questions approved.`
+      );
+    } catch (err: unknown) {
+      toast.error(mapApiError(err, 'Could not approve questions.').message);
+    } finally {
+      setApprovingAll(false);
     }
   };
 
@@ -464,6 +498,29 @@ export default function TeacherExamDetailPage({
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
+              {draftCount > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleApproveAllQuestions}
+                  disabled={approvingAll}
+                  className="text-xs text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg h-8 shadow-xs"
+                  title="Approve all draft questions with a set answer"
+                >
+                  {approvingAll ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                      Approving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCheck className="w-3.5 h-3.5 mr-1.5 text-emerald-600 dark:text-emerald-400" />
+                      Approve All ({draftCount})
+                    </>
+                  )}
+                </Button>
+              )}
+
               <Button
                 variant="outline"
                 size="sm"

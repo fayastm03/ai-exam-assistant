@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "seed": "tsx scripts/seed.ts",
     "ai:ping": "tsx scripts/ai-ping.ts",
     "extract:test": "tsx scripts/extract-test.ts"
   },

@@ -3,6 +3,7 @@ import { requireTeacher } from '@/lib/auth';
 import { jsonError, jsonSuccess } from '@/lib/api-response';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { calculateScore, QuestionForScoring } from '@/lib/scoring';
+import { checkAndAutoSubmitIfExpired } from '@/lib/attempt-autosubmit';
 
 interface RouteContext {
   params: Promise<{ attemptId: string }>;
@@ -46,12 +47,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return jsonError('Attempt not found', 404);
   }
 
-  // 2. Guard: Must be submitted
-  if (attempt.status !== 'submitted' && attempt.status !== 'auto_submitted') {
-    return jsonError('Feedback is only allowed on submitted attempts', 400);
-  }
-
-  // 3. Fetch exam and verify teacher ownership
+  // 2. Fetch exam and verify teacher ownership
   const { data: exam, error: examError } = await supabase
     .from('exams')
     .select('id, teacher_id, title, duration_min, negative_marking, status')
@@ -64,6 +60,20 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   if (exam.teacher_id !== auth.user.id) {
     return jsonError('Access denied: You can only view attempts for your own exams', 403);
+  }
+
+  // 2b. Edge Case 4: If student closed browser mid-test, auto-submit and score when teacher reads it
+  if (attempt.status === 'in_progress') {
+    const autoSubmitRes = await checkAndAutoSubmitIfExpired(supabase, attempt, exam);
+    if (autoSubmitRes.wasAutoSubmitted) {
+      attempt.status = 'auto_submitted';
+      attempt.score = autoSubmitRes.score;
+    }
+  }
+
+  // 3. Guard: Must be submitted
+  if (attempt.status !== 'submitted' && attempt.status !== 'auto_submitted') {
+    return jsonError('Feedback is only allowed on submitted attempts', 400);
   }
 
   // 4. Fetch all questions for this exam

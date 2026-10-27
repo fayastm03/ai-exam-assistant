@@ -3,6 +3,7 @@ import { requireTeacher } from '@/lib/auth';
 import { jsonError, jsonSuccess } from '@/lib/api-response';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { calculateScore, QuestionForScoring } from '@/lib/scoring';
+import { checkAndAutoSubmitIfExpired } from '@/lib/attempt-autosubmit';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -51,6 +52,21 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   // Calculate maximum possible score across all questions
   const maxPossibleScore = questions.reduce((sum, q) => sum + (Number(q.marks) || 0), 0);
+
+  // 2b. Auto-submit any expired in-progress attempts on read (e.g. student closed browser mid-test)
+  const nowIso = new Date().toISOString();
+  const { data: expiredAttempts } = await supabase
+    .from('attempts')
+    .select('id, exam_id, student_id, started_at, deadline_at, status')
+    .eq('exam_id', examId)
+    .eq('status', 'in_progress')
+    .lt('deadline_at', nowIso);
+
+  if (expiredAttempts && expiredAttempts.length > 0) {
+    for (const expAttempt of expiredAttempts) {
+      await checkAndAutoSubmitIfExpired(supabase, expAttempt, exam);
+    }
+  }
 
   // 3. Fetch all submitted or auto_submitted attempts with student profiles
   const { data: rawAttempts, error: attemptsError } = await supabase

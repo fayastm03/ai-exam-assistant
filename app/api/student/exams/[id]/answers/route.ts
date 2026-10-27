@@ -56,10 +56,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const gracePeriodMs = 10000;
 
   if (now.getTime() > deadline.getTime() + gracePeriodMs) {
-    return jsonSuccess({
-      ok: false,
+    return jsonError('Time expired for this exam attempt.', 400, {
       expired: true,
-      message: 'Time expired for this exam attempt.',
+      deadline_at: attempt.deadline_at,
     });
   }
 

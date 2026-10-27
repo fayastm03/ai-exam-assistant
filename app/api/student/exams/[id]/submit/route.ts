@@ -100,7 +100,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const finalStatus =
     parsed.data.autoSubmitted || isPastDeadline ? 'auto_submitted' : 'submitted';
 
-  // 6. Update attempt record
+  // 6. Update attempt record atomically (guard against race conditions from double submit)
   const { data: updatedAttempt, error: updateError } = await supabase
     .from('attempts')
     .update({
@@ -110,11 +110,28 @@ export async function POST(request: NextRequest, context: RouteContext) {
       updated_at: now.toISOString(),
     })
     .eq('id', attempt.id)
+    .eq('status', 'in_progress')
     .select()
-    .single();
+    .maybeSingle();
 
   if (updateError) {
     return jsonError(updateError.message, 500);
+  }
+
+  // If another concurrent submit already transitioned the attempt, return existing score
+  if (!updatedAttempt) {
+    const { data: alreadyDoneAttempt } = await supabase
+      .from('attempts')
+      .select('id, status, score')
+      .eq('id', attempt.id)
+      .single();
+
+    return jsonSuccess({
+      ok: true,
+      alreadySubmitted: true,
+      score: alreadyDoneAttempt?.score ?? attempt.score,
+      status: alreadyDoneAttempt?.status ?? 'submitted',
+    });
   }
 
   // 7. Update is_correct on attempt_answers

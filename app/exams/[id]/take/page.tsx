@@ -26,6 +26,7 @@ import {
   RefreshCw,
   AlertTriangle,
   LayoutGrid,
+  WifiOff,
 } from 'lucide-react';
 
 interface QuestionItem {
@@ -90,6 +91,11 @@ export default function StudentExamTakePage({
 
   // Mobile Question Palette Drawer
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
+
+  // Online/Offline & Auto-Retry Status (Edge Case 28)
+  const [isOnline, setIsOnline] = useState<boolean>(
+    () => (typeof window !== 'undefined' ? navigator.onLine : true)
+  );
 
   // Load Exam and Existing Attempt Session
   useEffect(() => {
@@ -294,6 +300,41 @@ export default function StudentExamTakePage({
     [examId, handleSubmitExam, router]
   );
 
+  // Track browser online/offline status (Edge Case 28)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Edge Case 28: Keep retrying saves for any answers that failed during a network drop
+  useEffect(() => {
+    if (!isOnline) return;
+
+    const failedQuestionIds = Object.entries(saveStatuses)
+      .filter(([, status]) => status === 'failed')
+      .map(([qId]) => qId);
+
+    if (failedQuestionIds.length === 0) return;
+
+    const retryTimer = setTimeout(() => {
+      failedQuestionIds.forEach((qId) => {
+        saveAnswerToServer(qId, answers[qId] ?? null);
+      });
+    }, 2500);
+
+    return () => clearTimeout(retryTimer);
+  }, [isOnline, saveStatuses, answers, saveAnswerToServer]);
+
   // Handle Option Selection
   const handleSelectOption = (questionId: string, optionId: string) => {
     // Immediate optimistic local update
@@ -381,6 +422,32 @@ export default function StudentExamTakePage({
           <Loader2 className="w-10 h-10 animate-spin text-amber-400" />
           <h2 className="text-xl font-bold">Time Expired — Submitting Exam</h2>
           <p className="text-sm text-neutral-300">Evaluating your answers, please wait...</p>
+        </div>
+      )}
+
+      {/* Edge Case 28: Network Drop Warning Banner & Auto-Retry Indicator */}
+      {(!isOnline || Object.values(saveStatuses).some((s) => s === 'failed')) && (
+        <div className="bg-amber-600 text-white px-4 py-2.5 rounded-xl text-xs font-medium flex items-center justify-between shadow-sm animate-pulse">
+          <div className="flex items-center gap-2">
+            <WifiOff className="w-4 h-4 shrink-0" />
+            <span>
+              {!isOnline
+                ? 'Network connection lost. Your selected answers are preserved locally; we will automatically retry saving when reconnected.'
+                : 'Connection unstable. Retrying unsaved answers in the background...'}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs bg-white text-amber-900 border-none hover:bg-neutral-100 shrink-0 ml-3 font-semibold"
+            onClick={() => {
+              Object.entries(saveStatuses)
+                .filter(([, status]) => status === 'failed')
+                .forEach(([qId]) => saveAnswerToServer(qId, answers[qId] ?? null));
+            }}
+          >
+            Retry Now
+          </Button>
         </div>
       )}
 

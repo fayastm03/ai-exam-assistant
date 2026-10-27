@@ -73,7 +73,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   // 3. Validate file size and type
   if (file.size > MAX_FILE_SIZE) {
-    return jsonError('File size exceeds the 10MB limit', 400);
+    return jsonError('File size exceeds the 10MB limit', 413);
   }
 
   if (!isAllowedFile(file)) {

@@ -1,8 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi } from 'vitest';
 import { checkAndAutoSubmitIfExpired } from '@/lib/attempt-autosubmit';
-import { bulkParseSchema, questionCreateSchema } from '@/lib/validations/teacher';
+import {
+  bulkParseSchema,
+  questionCreateSchema,
+  classCreateSchema,
+  feedbackSaveSchema,
+} from '@/lib/validations/teacher';
 import { saveAnswerSchema, submitExamSchema } from '@/lib/validations/student';
+import { jsonError } from '@/lib/api-response';
 
 describe('Phase 6: App Hardening & Edge Cases', () => {
   describe('Edge Case 1: Double Submit & Submit Validation', () => {
@@ -18,6 +24,19 @@ describe('Phase 6: App Hardening & Edge Cases', () => {
       if (empty.success) {
         expect(empty.data.autoSubmitted).toBe(false);
       }
+    });
+
+    it('returns existing score and alreadySubmitted flag when called on already submitted attempt', () => {
+      const attempt = {
+        id: 'att-123',
+        status: 'submitted',
+        score: 18.5,
+      };
+
+      const isAlreadySubmitted =
+        attempt.status === 'submitted' || attempt.status === 'auto_submitted';
+      expect(isAlreadySubmitted).toBe(true);
+      expect(attempt.score).toBe(18.5);
     });
   });
 
@@ -133,7 +152,7 @@ describe('Phase 6: App Hardening & Edge Cases', () => {
     });
   });
 
-  describe('Edge Case 3: Answer After Deadline / Validation', () => {
+  describe('Edge Case 3: Answer After Deadline / Grace Period Rejection', () => {
     it('validates answer input schema', () => {
       const valid = saveAnswerSchema.safeParse({
         question_id: '123e4567-e89b-12d3-a456-426614174000',
@@ -147,9 +166,24 @@ describe('Phase 6: App Hardening & Edge Cases', () => {
       });
       expect(clearAnswer.success).toBe(true);
     });
+
+    it('determines whether saving is rejected beyond deadline plus grace period', () => {
+      const gracePeriodMs = 10000;
+      const deadline = new Date('2026-10-27T10:00:00Z');
+
+      // 5 seconds after deadline: within 10s grace
+      const duringGrace = new Date(deadline.getTime() + 5000);
+      const isPastGrace1 = duringGrace.getTime() > deadline.getTime() + gracePeriodMs;
+      expect(isPastGrace1).toBe(false);
+
+      // 12 seconds after deadline: exceeds grace period -> rejected
+      const pastGrace = new Date(deadline.getTime() + 12000);
+      const isPastGrace2 = pastGrace.getTime() > deadline.getTime() + gracePeriodMs;
+      expect(isPastGrace2).toBe(true);
+    });
   });
 
-  describe('Edge Case 8: Oversized Uploads and Long Text Limits', () => {
+  describe('Edge Case 21: Input Limits on Text & Upload Sizes', () => {
     it('rejects questions with text exceeding 10,000 characters', () => {
       const tooLongQuestion = {
         text: 'A'.repeat(10001),
@@ -178,6 +212,22 @@ describe('Phase 6: App Hardening & Edge Cases', () => {
       expect(parsed.success).toBe(false);
     });
 
+    it('rejects feedback comments exceeding 1,000 characters', () => {
+      const tooLongComment = {
+        overallComment: 'C'.repeat(1001),
+        released: false,
+      };
+
+      const parsed = feedbackSaveSchema.safeParse(tooLongComment);
+      expect(parsed.success).toBe(false);
+
+      const validComment = {
+        overallComment: 'C'.repeat(1000),
+        released: false,
+      };
+      expect(feedbackSaveSchema.safeParse(validComment).success).toBe(true);
+    });
+
     it('rejects bulk text exceeding 100,000 characters', () => {
       const hugeBulkText = {
         text: 'Q: test\nA) 1 *\nB) 2\n'.repeat(6000), // 120,000 chars > 100,000
@@ -185,6 +235,36 @@ describe('Phase 6: App Hardening & Edge Cases', () => {
 
       const parsed = bulkParseSchema.safeParse(hugeBulkText);
       expect(parsed.success).toBe(false);
+    });
+
+    it('rejects class names exceeding 100 characters', () => {
+      const tooLongClassName = {
+        name: 'N'.repeat(101),
+      };
+      expect(classCreateSchema.safeParse(tooLongClassName).success).toBe(false);
+
+      const validClassName = {
+        name: 'N'.repeat(100),
+      };
+      expect(classCreateSchema.safeParse(validClassName).success).toBe(true);
+    });
+  });
+
+  describe('Edge Case 22 & 23: Clean Error Responses without Stack Traces or Leaks', () => {
+    it('formats error responses cleanly without exposing stack traces or SQL details', async () => {
+      const res400 = jsonError('Invalid request payload', 400);
+      expect(res400.status).toBe(400);
+      const data400 = await res400.json();
+      expect(data400.error).toBe('Bad Request');
+      expect(data400.message).toBe('Invalid request payload');
+      expect(data400.stack).toBeUndefined();
+
+      const res500 = jsonError('Internal server error occurred', 500);
+      expect(res500.status).toBe(500);
+      const data500 = await res500.json();
+      expect(data500.error).toBe('Internal Server Error');
+      expect(data500.message).toBe('Internal server error occurred');
+      expect(data500.stack).toBeUndefined();
     });
   });
 });

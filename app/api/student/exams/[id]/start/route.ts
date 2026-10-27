@@ -30,7 +30,44 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return jsonError('Exam is not available or not published', 404);
   }
 
-  // 1b. Check that the student is approved in a class the exam is assigned to
+  const now = new Date();
+
+  // 2. Check for existing attempt first:
+  // If an attempt is already in progress or submitted, resume it (allows a student removed
+  // from class mid-test to finish an ongoing attempt and view old results).
+  const { data: existingAttempt } = await supabase
+    .from('attempts')
+    .select('*')
+    .eq('exam_id', examId)
+    .eq('student_id', auth.user.id)
+    .maybeSingle();
+
+  if (existingAttempt) {
+    if (existingAttempt.status === 'submitted' || existingAttempt.status === 'auto_submitted') {
+      return jsonSuccess({
+        alreadySubmitted: true,
+        attempt: existingAttempt,
+        serverTime: now.toISOString(),
+      });
+    }
+
+    return jsonSuccess({
+      alreadySubmitted: false,
+      isResumed: true,
+      attempt: existingAttempt,
+      serverTime: now.toISOString(),
+    });
+  }
+
+  // 3. For NEW attempts: Validate schedule and class approval
+  if (exam.open_at && new Date(exam.open_at) > now) {
+    return jsonError('This exam is not open yet', 400);
+  }
+  if (exam.close_at && new Date(exam.close_at) < now) {
+    return jsonError('This exam is closed', 400);
+  }
+
+  // Check that the student is approved in a class the exam is assigned to
   const { data: assignedClasses, error: assignError } = await supabase
     .from('exam_classes')
     .select('class_id')
@@ -64,44 +101,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const now = new Date();
-
-  // Check schedule window if defined
-  if (exam.open_at && new Date(exam.open_at) > now) {
-    return jsonError('This exam is not open yet', 400);
-  }
-  if (exam.close_at && new Date(exam.close_at) < now) {
-    return jsonError('This exam is closed', 400);
-  }
-
-  // 2. Check for existing attempt
-  const { data: existingAttempt } = await supabase
-    .from('attempts')
-    .select('*')
-    .eq('exam_id', examId)
-    .eq('student_id', auth.user.id)
-    .maybeSingle();
-
-  if (existingAttempt) {
-    // If already submitted, indicate redirect
-    if (existingAttempt.status === 'submitted' || existingAttempt.status === 'auto_submitted') {
-      return jsonSuccess({
-        alreadySubmitted: true,
-        attempt: existingAttempt,
-        serverTime: now.toISOString(),
-      });
-    }
-
-    // Attempt is in progress, resume it
-    return jsonSuccess({
-      alreadySubmitted: false,
-      isResumed: true,
-      attempt: existingAttempt,
-      serverTime: now.toISOString(),
-    });
-  }
-
-  // 3. Create new attempt
+  // 4. Create new attempt
   // Deadline = now + duration_min minutes
   let deadline = new Date(now.getTime() + exam.duration_min * 60 * 1000);
 
@@ -123,6 +123,26 @@ export async function POST(request: NextRequest, context: RouteContext) {
     .single();
 
   if (createError) {
+    // Edge Case 7: Handle race conditions from starting twice at the exact same moment
+    if (createError.code === '23505' || createError.message?.toLowerCase().includes('unique')) {
+      const { data: parallelAttempt } = await supabase
+        .from('attempts')
+        .select('*')
+        .eq('exam_id', examId)
+        .eq('student_id', auth.user.id)
+        .single();
+
+      if (parallelAttempt) {
+        return jsonSuccess({
+          alreadySubmitted:
+            parallelAttempt.status === 'submitted' ||
+            parallelAttempt.status === 'auto_submitted',
+          isResumed: true,
+          attempt: parallelAttempt,
+          serverTime: now.toISOString(),
+        });
+      }
+    }
     return jsonError(createError.message, 500);
   }
 

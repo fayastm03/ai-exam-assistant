@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AppMessage } from '@/components/ui/app-message';
-import { Mail, Loader2, ArrowLeft } from 'lucide-react';
+import { Mail, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 function CheckEmailContent() {
   const searchParams = useSearchParams();
@@ -15,9 +14,38 @@ function CheckEmailContent() {
   const next = searchParams.get('next');
 
   const [resending, setResending] = useState(false);
+  const [alreadyConfirmed, setAlreadyConfirmed] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
+
+  // Check if the email is already confirmed in the database on load
+  useEffect(() => {
+    if (!email) return;
+
+    let ignore = false;
+    async function checkStatus() {
+      try {
+        const res = await fetch(
+          `/api/auth/resend-confirmation?email=${encodeURIComponent(email)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (!ignore && data.confirmed) {
+            setAlreadyConfirmed(true);
+            setSuccessMsg('Your email is already confirmed. You can sign in now.');
+          }
+        }
+      } catch {
+        // Continue silently if check fails
+      }
+    }
+
+    checkStatus();
+    return () => {
+      ignore = true;
+    };
+  }, [email]);
 
   const handleResend = async () => {
     if (!email) {
@@ -30,26 +58,25 @@ function CheckEmailContent() {
     setSuccessMsg(null);
 
     try {
-      const supabase = createClient();
-      const origin = window.location.origin;
-
-      const callbackUrl = next
-        ? `${origin}/auth/callback?next=${encodeURIComponent(next)}`
-        : `${origin}/auth/callback`;
-
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email.trim(),
-        options: {
-          emailRedirectTo: callbackUrl,
-        },
+      const res = await fetch('/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, next }),
       });
 
-      if (error) {
-        throw new Error(error.message);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to resend confirmation email.');
       }
 
-      setSuccessMsg(`Confirmation email resent to ${email}. Check your inbox.`);
+      if (data.status === 'already_confirmed') {
+        setAlreadyConfirmed(true);
+        setSuccessMsg(data.message || 'Your email is already confirmed. You can sign in directly.');
+        return;
+      }
+
+      setSuccessMsg(data.message || `Confirmation email resent to ${email}. Check your inbox.`);
       setCooldown(30);
 
       const interval = setInterval(() => {
@@ -86,28 +113,48 @@ function CheckEmailContent() {
           {successMsg && <AppMessage message={successMsg} type="success" />}
           {errorMsg && <AppMessage message={errorMsg} type="error" />}
 
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            The link is valid for 24 hours. If you do not see it within a couple of minutes, check your spam folder.
-          </p>
+          {alreadyConfirmed ? (
+            <div className="p-3.5 rounded-lg border border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-100 text-xs space-y-2">
+              <div className="flex items-center gap-2 font-semibold">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Account Already Verified</span>
+              </div>
+              <p className="text-muted-foreground">
+                Your email address has already been confirmed. You do not need another email link.
+              </p>
+              <Link
+                href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}
+                className="inline-flex w-full items-center justify-center h-9 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors mt-2"
+              >
+                Sign In Now
+              </Link>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                The link is valid for 24 hours. If you do not see it within a couple of minutes, check your spam folder.
+              </p>
 
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleResend}
-            disabled={resending || cooldown > 0}
-            className="w-full h-10 text-sm font-medium rounded-lg"
-          >
-            {resending ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Resending...
-              </>
-            ) : cooldown > 0 ? (
-              `Resend in ${cooldown}s`
-            ) : (
-              'Resend Confirmation Email'
-            )}
-          </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleResend}
+                disabled={resending || cooldown > 0}
+                className="w-full h-10 text-sm font-medium rounded-lg"
+              >
+                {resending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Checking & Resending...
+                  </>
+                ) : cooldown > 0 ? (
+                  `Resend in ${cooldown}s`
+                ) : (
+                  'Resend Confirmation Email'
+                )}
+              </Button>
+            </>
+          )}
         </CardContent>
 
         <CardFooter className="px-6 py-4 border-t border-border bg-muted/30 rounded-b-lg text-center justify-center">

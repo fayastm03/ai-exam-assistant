@@ -164,24 +164,31 @@ function LoginForm() {
     setPageMessage(null);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: cleanEmail,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+      const res = await fetch('/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail }),
       });
+      const data = await res.json();
 
-      if (error) {
-        setPageMessage(mapAuthError(error));
-      } else {
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to resend confirmation email.');
+      }
+
+      if (data.status === 'already_confirmed') {
+        setEmailUnconfirmedManual(false);
         setPageMessage({
           type: 'success',
-          message: `Confirmation email sent to ${cleanEmail}. Check your inbox.`,
+          message: 'Your email is already confirmed! Please enter your password to sign in.',
         });
-        setResendCooldown(60);
+        return;
       }
+
+      setPageMessage({
+        type: 'success',
+        message: data.message || `Confirmation email sent to ${cleanEmail}. Check your inbox.`,
+      });
+      setResendCooldown(60);
     } catch (err: unknown) {
       setPageMessage(mapAuthError(err));
     } finally {

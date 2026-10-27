@@ -4,7 +4,7 @@ import React, { useState, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,16 +39,15 @@ function StudentSignupForm() {
     const cleanEmail = email.trim();
 
     if (!cleanName) {
-      errors.name = 'Please enter your full name.';
+      errors.name = 'Enter your full name.';
     }
 
     if (!cleanEmail) {
-      errors.email = 'Please enter your email address.';
+      errors.email = 'Enter your email address.';
     } else if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      errors.email = 'Please enter a valid email address.';
+      errors.email = 'Enter a valid email address.';
     }
 
-    // Password rule: at least 8 characters long and contain a mix of letters and numbers
     const hasLetters = /[a-zA-Z]/.test(password);
     const hasNumbers = /[0-9]/.test(password);
 
@@ -92,7 +91,6 @@ function StudentSignupForm() {
         ? `${origin}/auth/callback?next=${encodeURIComponent(next)}`
         : `${origin}/auth/callback`;
 
-      // STRICT SECURITY: Role is always student
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -111,7 +109,6 @@ function StudentSignupForm() {
         return;
       }
 
-      // Check if email confirmation is required
       if (data.user && (!data.session || !data.user.email_confirmed_at)) {
         const checkEmailUrl = `/signup/check-email?email=${encodeURIComponent(email.trim())}${
           next ? `&next=${encodeURIComponent(next)}` : ''
@@ -120,7 +117,6 @@ function StudentSignupForm() {
         return;
       }
 
-      // If automatically confirmed or session established, proceed to student destination
       router.push(next && next.startsWith('/') ? next : '/exams');
     } catch (err: unknown) {
       setPageMessage(mapAuthError(err));
@@ -131,28 +127,27 @@ function StudentSignupForm() {
   const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : '/login';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 px-4 py-8">
-      <Card className="w-full max-w-md shadow-lg border-neutral-200/80 dark:border-neutral-800">
-        <CardHeader className="text-center space-y-2 pb-4">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
-            <GraduationCap className="w-6 h-6" />
-          </div>
-          <div>
-            <CardTitle className="text-xl font-bold tracking-tight">
-              Create Student Account
-            </CardTitle>
-            <CardDescription className="text-xs text-neutral-500">
-              Sign up to take exams, track your progress, and review teacher feedback.
-            </CardDescription>
-          </div>
-        </CardHeader>
+    <div className="w-full max-w-sm mx-auto space-y-6">
+      <div className="text-left space-y-1">
+        <div className="flex items-center gap-2 mb-2 text-primary font-bold text-lg">
+          <GraduationCap className="w-6 h-6" />
+          <span>AI Exam Assistant</span>
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Create Student Account
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Sign up to take scheduled exams and view feedback.
+        </p>
+      </div>
 
+      <Card className="rounded-lg border border-border shadow-sm bg-card">
         <form onSubmit={handleSignup} noValidate>
-          <CardContent className="space-y-4">
+          <CardContent className="p-6 space-y-4">
             {pageMessage && <AppMessage message={pageMessage} />}
 
             <div className="space-y-1.5">
-              <Label htmlFor="signup-name" className="text-xs font-medium">
+              <Label htmlFor="signup-name" className="text-sm font-medium">
                 Full Name
               </Label>
               <Input
@@ -168,15 +163,18 @@ function StudentSignupForm() {
                 disabled={loading}
                 autoComplete="name"
                 aria-invalid={!!fieldErrors.name}
-                className={cn(fieldErrors.name && 'border-red-500 focus-visible:ring-red-400')}
+                className={cn(
+                  'h-10 text-base rounded-lg',
+                  fieldErrors.name && 'border-destructive focus-visible:ring-destructive'
+                )}
               />
               {fieldErrors.name && (
-                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{fieldErrors.name}</p>
+                <p className="text-xs text-destructive mt-1">{fieldErrors.name}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="signup-email" className="text-xs font-medium">
+              <Label htmlFor="signup-email" className="text-sm font-medium">
                 Email Address
               </Label>
               <Input
@@ -192,22 +190,25 @@ function StudentSignupForm() {
                 disabled={loading}
                 autoComplete="email"
                 aria-invalid={!!fieldErrors.email}
-                className={cn(fieldErrors.email && 'border-red-500 focus-visible:ring-red-400')}
+                className={cn(
+                  'h-10 text-base rounded-lg',
+                  fieldErrors.email && 'border-destructive focus-visible:ring-destructive'
+                )}
               />
               {fieldErrors.email && (
-                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{fieldErrors.email}</p>
+                <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="signup-password" className="text-xs font-medium">
+              <Label htmlFor="signup-password" className="text-sm font-medium">
                 Password
               </Label>
               <Input
                 ref={passwordInputRef}
                 id="signup-password"
                 type="password"
-                placeholder="At least 8 characters with letters & numbers"
+                placeholder="At least 8 letters & numbers"
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
@@ -218,22 +219,23 @@ function StudentSignupForm() {
                 disabled={loading}
                 autoComplete="new-password"
                 aria-invalid={!!fieldErrors.password}
-                className={cn(fieldErrors.password && 'border-red-500 focus-visible:ring-red-400')}
+                className={cn(
+                  'h-10 text-base rounded-lg',
+                  fieldErrors.password && 'border-destructive focus-visible:ring-destructive'
+                )}
               />
               {fieldErrors.password ? (
-                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{fieldErrors.password}</p>
+                <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
               ) : (
-                <p className="text-[11px] text-neutral-500">
-                  Must be at least 8 characters long and contain a mix of letters and numbers.
+                <p className="text-xs text-muted-foreground">
+                  At least 8 characters with a mix of letters and numbers.
                 </p>
               )}
             </div>
-          </CardContent>
 
-          <CardFooter className="flex-col gap-3 pt-2">
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              className="w-full h-10 text-base font-medium rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm cursor-pointer mt-2"
               disabled={loading}
             >
               {loading ? (
@@ -248,13 +250,15 @@ function StudentSignupForm() {
                 </>
               )}
             </Button>
+          </CardContent>
 
-            <div className="text-center text-xs text-neutral-500 pt-1">
+          <CardFooter className="px-6 py-4 border-t border-border bg-muted/30 rounded-b-lg text-center justify-center text-xs text-muted-foreground">
+            <span>
               Already have an account?{' '}
-              <Link href={loginHref} className="text-blue-600 hover:underline font-medium">
+              <Link href={loginHref} className="text-primary font-semibold hover:underline">
                 Sign in
               </Link>
-            </div>
+            </span>
           </CardFooter>
         </form>
       </Card>
@@ -264,8 +268,10 @@ function StudentSignupForm() {
 
 export default function SignupPage() {
   return (
-    <Suspense fallback={<div className="text-sm text-neutral-500">Loading...</div>}>
-      <StudentSignupForm />
-    </Suspense>
+    <main className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-background">
+      <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+        <StudentSignupForm />
+      </Suspense>
+    </main>
   );
 }

@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,13 +34,13 @@ export default function ForgotPasswordPage() {
     const cleanEmail = email.trim();
 
     if (!cleanEmail) {
-      setFieldError('Please enter your email address.');
+      setFieldError('Enter your email address.');
       emailInputRef.current?.focus();
       return;
     }
 
     if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      setFieldError('Please enter a valid email address.');
+      setFieldError('Enter a valid email address.');
       emailInputRef.current?.focus();
       return;
     }
@@ -77,41 +77,35 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-neutral-50 dark:bg-neutral-950">
-      <div className="w-full max-w-md px-4">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600 text-white mb-3 shadow-md shadow-blue-500/20">
-            <GraduationCap className="w-7 h-7" />
+    <main className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-background">
+      <div className="w-full max-w-sm mx-auto space-y-6">
+        <div className="text-left space-y-1">
+          <div className="flex items-center gap-2 mb-2 text-primary font-bold text-lg">
+            <GraduationCap className="w-6 h-6" />
+            <span>AI Exam Assistant</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
-            AI Exam Assistant
-          </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Account Recovery
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Enter your email address to receive password reset instructions.
           </p>
         </div>
 
-        <Card className="shadow-lg border-neutral-200/80 dark:border-neutral-800">
-          <CardHeader className="pb-4">
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-              Forgot Password
-            </h2>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Enter your email address to receive a password reset link
-            </p>
-          </CardHeader>
+        <Card className="rounded-lg border border-border shadow-sm bg-card">
+          <form onSubmit={handleSubmit} noValidate>
+            <CardContent className="p-6 space-y-4">
+              {pageMessage && <AppMessage message={pageMessage} />}
 
-          <CardContent className="space-y-4 pt-0">
-            {pageMessage && <AppMessage message={pageMessage} />}
-
-            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="space-y-1.5">
-                <Label htmlFor="recovery-email">Email Address</Label>
+                <Label htmlFor="recovery-email" className="text-sm font-medium">
+                  Email Address
+                </Label>
                 <Input
                   ref={emailInputRef}
                   id="recovery-email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="you@school.edu"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -120,16 +114,19 @@ export default function ForgotPasswordPage() {
                   autoComplete="email"
                   disabled={loading}
                   aria-invalid={!!fieldError}
-                  className={cn(fieldError && 'border-red-500 focus-visible:ring-red-400')}
+                  className={cn(
+                    'h-10 text-base rounded-lg',
+                    fieldError && 'border-destructive focus-visible:ring-destructive'
+                  )}
                 />
                 {fieldError && (
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">{fieldError}</p>
+                  <p className="text-xs text-destructive mt-1">{fieldError}</p>
                 )}
               </div>
 
               <Button
                 type="submit"
-                className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                className="w-full h-10 text-base font-medium rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm cursor-pointer mt-2"
                 disabled={loading || cooldown > 0}
               >
                 {loading ? (
@@ -143,18 +140,18 @@ export default function ForgotPasswordPage() {
                   'Send Reset Link'
                 )}
               </Button>
-            </form>
-          </CardContent>
+            </CardContent>
 
-          <CardFooter className="pt-0 pb-4 text-center justify-center">
-            <Link
-              href="/login"
-              className="inline-flex items-center text-xs text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200 font-medium"
-            >
-              <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-              Back to Sign In
-            </Link>
-          </CardFooter>
+            <CardFooter className="px-6 py-4 border-t border-border bg-muted/30 rounded-b-lg text-center justify-center">
+              <Link
+                href="/login"
+                className="text-xs text-muted-foreground hover:text-foreground font-medium inline-flex items-center gap-1.5"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Back to sign in
+              </Link>
+            </CardFooter>
+          </form>
         </Card>
       </div>
     </main>

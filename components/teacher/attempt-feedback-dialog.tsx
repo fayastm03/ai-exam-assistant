@@ -571,13 +571,13 @@ export function AttemptFeedbackDialog({
             )}
 
             {/* Overall Feedback Form */}
-            <div className="p-4 rounded-xl border border-blue-200/80 dark:border-blue-900/60 bg-blue-50/30 dark:bg-blue-950/10 space-y-3">
+            <div className="p-4 rounded-lg border border-border bg-secondary/30 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex items-center gap-1.5">
-                    <MessageSquare className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                      Overall Attempt Feedback
+                    <MessageSquare className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">
+                      Overall Feedback
                     </span>
                   </div>
 
@@ -591,18 +591,18 @@ export function AttemptFeedbackDialog({
                       saving ||
                       (data.attempt.status !== 'submitted' && data.attempt.status !== 'auto_submitted')
                     }
-                    className="h-7 text-xs border-purple-300 text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+                    className="h-8 text-xs rounded-lg"
                     title="Generate personalized feedback suggestion using AI"
                   >
                     {suggesting ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                        Suggesting feedback...
+                        Suggesting...
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-3.5 h-3.5 mr-1.5 text-purple-600" />
-                        Suggest feedback
+                        <Sparkles className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                        Suggest Feedback
                       </>
                     )}
                   </Button>
@@ -612,16 +612,16 @@ export function AttemptFeedbackDialog({
                   {aiDraftPending ? (
                     <Badge
                       variant="outline"
-                      className="text-[10px] font-medium py-0 border-purple-400 text-purple-700 bg-purple-50 dark:bg-purple-950/40"
+                      className="text-xs font-normal py-0 border-border bg-secondary text-foreground rounded"
                     >
-                      ✨ AI Draft (Unsaved)
+                      AI Draft (Unsaved)
                     </Badge>
                   ) : data.feedback.overall ? (
                     <div className="flex items-center gap-1.5">
                       {data.feedback.overall.source === 'ai_draft' && (
                         <Badge
                           variant="outline"
-                          className="text-[10px] font-medium py-0 border-purple-300 text-purple-600 bg-purple-50/50 dark:bg-purple-950/20"
+                          className="text-xs font-normal py-0 border-border bg-secondary text-foreground rounded"
                         >
                           AI Draft
                         </Badge>
@@ -629,32 +629,32 @@ export function AttemptFeedbackDialog({
                       <Badge
                         variant="outline"
                         className={cn(
-                          'text-[10px] font-medium py-0',
+                          'text-xs font-medium py-0 rounded',
                           isOverallReleased
-                            ? 'border-emerald-300 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/20'
-                            : 'border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/20'
+                            ? 'border-emerald-400 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10'
+                            : 'border-amber-400 text-amber-700 dark:text-amber-400 bg-amber-500/10'
                         )}
                       >
                         {isOverallReleased ? 'Released' : 'Draft'}
                       </Badge>
                     </div>
                   ) : (
-                    <Badge variant="outline" className="text-[10px] py-0 text-neutral-400">
+                    <Badge variant="outline" className="text-xs py-0 text-muted-foreground rounded">
                       Unsaved
                     </Badge>
                   )}
 
-                  <span className="text-[11px] text-neutral-400">
-                    {overallComment.length}/1000 chars
+                  <span className="text-xs text-muted-foreground">
+                    {overallComment.length}/1000
                   </span>
                 </div>
               </div>
 
               {aiDraftPending && (
-                <div className="flex items-center gap-2 text-xs text-purple-800 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 p-2.5 rounded-md border border-purple-200 dark:border-purple-800/80">
-                  <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+                <div className="flex items-center gap-2 text-xs text-foreground bg-secondary p-3 rounded-lg border border-border">
+                  <Sparkles className="w-4 h-4 text-primary shrink-0" />
                   <span>
-                    AI suggested draft loaded. You can review and edit this comment before saving. Nothing will be visible to the student until you click <strong>Release</strong>.
+                    AI suggested draft loaded. You can review and edit before saving. Nothing is visible to the student until you click <strong>Release</strong>.
                   </span>
                 </div>
               )}
@@ -663,7 +663,7 @@ export function AttemptFeedbackDialog({
                 placeholder="Write overall guidance, encouragement, or syllabus advice for this student (max 1000 characters)..."
                 value={overallComment}
                 onChange={(e) => setOverallComment(e.target.value.slice(0, 1000))}
-                className="text-xs min-h-[90px] bg-white dark:bg-neutral-900 resize-y"
+                className="text-base sm:text-sm min-h-[100px] rounded-lg bg-card resize-y"
               />
 
               {/* Action Buttons for Feedback */}
@@ -673,12 +673,12 @@ export function AttemptFeedbackDialog({
                   size="sm"
                   onClick={() => handleSave(false)}
                   disabled={saving}
-                  className="text-xs h-8"
+                  className="text-xs h-9 px-3 rounded-lg"
                 >
                   {saving ? (
-                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                   ) : (
-                    <Save className="w-3.5 h-3.5 mr-1" />
+                    <Save className="w-3.5 h-3.5 mr-1.5" />
                   )}
                   Save Draft
                 </Button>
@@ -687,12 +687,12 @@ export function AttemptFeedbackDialog({
                   size="sm"
                   onClick={() => handleSave(true)}
                   disabled={saving}
-                  className="text-xs h-8 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                  className="text-xs h-9 px-4 rounded-lg bg-primary text-primary-foreground font-medium"
                 >
                   {saving ? (
-                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                   ) : (
-                    <Send className="w-3.5 h-3.5 mr-1" />
+                    <Send className="w-3.5 h-3.5 mr-1.5" />
                   )}
                   Release to Student
                 </Button>

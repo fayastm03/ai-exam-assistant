@@ -187,19 +187,19 @@ export default function TeacherExamsPage() {
     switch (status) {
       case 'published':
         return (
-          <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs">
+          <Badge className="bg-emerald-600 text-white font-medium text-xs rounded">
             Published
           </Badge>
         );
       case 'draft':
         return (
-          <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 text-xs font-medium">
+          <Badge variant="outline" className="text-xs font-normal border-border bg-secondary text-foreground rounded">
             Draft
           </Badge>
         );
       case 'closed':
         return (
-          <Badge variant="secondary" className="text-xs font-medium">
+          <Badge variant="secondary" className="text-xs font-normal text-muted-foreground rounded">
             Closed
           </Badge>
         );
@@ -209,42 +209,42 @@ export default function TeacherExamsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
-            Exam Management
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Exams
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Create, edit, and publish MCQ exams with automated server evaluation
+          <p className="text-sm text-muted-foreground mt-1">
+            Create, manage, and publish your examination papers.
           </p>
         </div>
 
-        <Button onClick={() => setCreateOpen(true)} className="w-full sm:w-auto shadow-sm">
-          <Plus className="w-4 h-4 mr-2" />
+        <Button onClick={() => setCreateOpen(true)} className="w-full sm:w-auto rounded-lg h-9 bg-primary text-primary-foreground font-medium text-xs">
+          <Plus className="w-4 h-4 mr-1.5" />
           Create Exam
         </Button>
 
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="sm:max-w-lg rounded-lg">
             <DialogHeader>
-              <DialogTitle>Create New Exam</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-base font-semibold">Create New Exam</DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
                 Set up initial exam details. You can add questions and adjust settings next.
               </DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleCreateExam} className="space-y-4 pt-2">
               {createError && (
-                <Alert variant="destructive" className="py-2.5">
+                <Alert variant="destructive" className="py-2.5 rounded-lg text-xs">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">{createError}</AlertDescription>
+                  <AlertDescription>{createError}</AlertDescription>
                 </Alert>
               )}
 
               <div className="space-y-1.5">
-                <Label htmlFor="exam-title">Exam Title *</Label>
+                <Label htmlFor="exam-title" className="text-xs font-medium">Exam Title *</Label>
                 <Input
                   id="exam-title"
                   placeholder="e.g. Physics Midterm 2026"
@@ -252,12 +252,13 @@ export default function TeacherExamsPage() {
                   onChange={(e) => setCreateTitle(e.target.value)}
                   required
                   disabled={createLoading}
+                  className="rounded-lg h-10 text-base sm:text-sm"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="exam-duration">Duration (Minutes) *</Label>
+                  <Label htmlFor="exam-duration" className="text-xs font-medium">Duration (Minutes) *</Label>
                   <Input
                     id="exam-duration"
                     type="number"
@@ -266,11 +267,12 @@ export default function TeacherExamsPage() {
                     onChange={(e) => setCreateDuration(e.target.value)}
                     required
                     disabled={createLoading}
+                    className="rounded-lg h-10 text-base sm:text-sm"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="exam-neg">Negative Marking (0 - 1)</Label>
+                  <Label htmlFor="exam-neg" className="text-xs font-medium">Negative Marking (0 - 1)</Label>
                   <Input
                     id="exam-neg"
                     type="number"
@@ -281,13 +283,14 @@ export default function TeacherExamsPage() {
                     value={createNegative}
                     onChange={(e) => setCreateNegative(e.target.value)}
                     disabled={createLoading}
+                    className="rounded-lg h-10 text-base sm:text-sm"
                   />
-                  <p className="text-[11px] text-neutral-400">0 for none, 0.25 for 1/4 marks penalty</p>
+                  <p className="text-[11px] text-muted-foreground">0 for none, 0.25 for 25% penalty</p>
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="exam-instructions">Instructions (Optional)</Label>
+                <Label htmlFor="exam-instructions" className="text-xs font-medium">Instructions (Optional)</Label>
                 <Textarea
                   id="exam-instructions"
                   placeholder="Instructions shown to students before beginning the exam..."
@@ -295,6 +298,7 @@ export default function TeacherExamsPage() {
                   value={createInstructions}
                   onChange={(e) => setCreateInstructions(e.target.value)}
                   disabled={createLoading}
+                  className="rounded-lg text-base sm:text-sm"
                 />
               </div>
 
@@ -304,24 +308,25 @@ export default function TeacherExamsPage() {
                   type="checkbox"
                   checked={createShuffle}
                   onChange={(e) => setCreateShuffle(e.target.checked)}
-                  className="rounded border-neutral-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                  className="rounded border-border accent-primary w-4 h-4"
                   disabled={createLoading}
                 />
-                <Label htmlFor="exam-shuffle" className="text-xs font-normal cursor-pointer">
+                <Label htmlFor="exam-shuffle" className="text-xs font-normal cursor-pointer text-muted-foreground">
                   Shuffle question order for each student
                 </Label>
               </div>
 
-              <DialogFooter className="pt-2">
+              <DialogFooter className="pt-2 gap-2 sm:gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setCreateOpen(false)}
                   disabled={createLoading}
+                  className="rounded-lg h-9 text-xs"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createLoading}>
+                <Button type="submit" disabled={createLoading} className="rounded-lg h-9 bg-primary text-primary-foreground text-xs font-medium">
                   {createLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -339,11 +344,11 @@ export default function TeacherExamsPage() {
 
       {/* Error state */}
       {errorMsg && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="rounded-lg">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
             <span>{errorMsg}</span>
-            <Button size="sm" variant="outline" onClick={fetchExams} className="ml-4 h-7 text-xs">
+            <Button size="sm" variant="outline" onClick={fetchExams} className="ml-4 h-8 text-xs rounded-lg">
               Retry
             </Button>
           </AlertDescription>
@@ -354,14 +359,14 @@ export default function TeacherExamsPage() {
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="rounded-lg border border-border animate-pulse shadow-sm">
               <CardHeader className="space-y-2">
-                <div className="h-4 bg-neutral-200 dark:bg-neutral-800 rounded w-1/3" />
-                <div className="h-6 bg-neutral-200 dark:bg-neutral-800 rounded w-3/4" />
+                <div className="h-4 bg-secondary rounded w-1/3" />
+                <div className="h-6 bg-secondary rounded w-3/4" />
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="h-3 bg-neutral-200 dark:bg-neutral-800 rounded w-1/2" />
-                <div className="h-3 bg-neutral-200 dark:bg-neutral-800 rounded w-2/3" />
+                <div className="h-3 bg-secondary rounded w-1/2" />
+                <div className="h-3 bg-secondary rounded w-2/3" />
               </CardContent>
             </Card>
           ))}
@@ -370,20 +375,20 @@ export default function TeacherExamsPage() {
 
       {/* Empty State */}
       {!loading && !errorMsg && exams.length === 0 && (
-        <Card className="border-dashed py-12 text-center bg-neutral-50/50 dark:bg-neutral-900/50">
+        <Card className="rounded-lg border border-dashed border-border py-12 text-center bg-card shadow-sm">
           <CardContent className="flex flex-col items-center justify-center space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center">
-              <BookOpen className="w-7 h-7" />
+            <div className="w-12 h-12 rounded-lg bg-secondary text-primary flex items-center justify-center">
+              <BookOpen className="w-6 h-6" />
             </div>
             <div className="max-w-sm space-y-1">
-              <CardTitle className="text-lg">No exams created yet</CardTitle>
-              <CardDescription className="text-xs">
+              <CardTitle className="text-base font-semibold text-foreground">No exams yet</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
                 Build your first exam draft, author questions manually, or use the bulk paste parser.
               </CardDescription>
             </div>
-            <Button onClick={() => setCreateOpen(true)} className="shadow-sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Your First Exam
+            <Button onClick={() => setCreateOpen(true)} className="rounded-lg h-9 px-4 bg-primary text-primary-foreground text-xs font-medium">
+              <Plus className="w-4 h-4 mr-1.5" />
+              Create an Exam
             </Button>
           </CardContent>
         </Card>
@@ -395,54 +400,54 @@ export default function TeacherExamsPage() {
           {exams.map((exam) => (
             <Card
               key={exam.id}
-              className="flex flex-col justify-between hover:shadow-md transition-shadow border-neutral-200/80 dark:border-neutral-800"
+              className="rounded-lg border border-border shadow-sm flex flex-col justify-between"
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-base font-semibold line-clamp-1 leading-snug">
+                  <CardTitle className="text-base font-semibold text-foreground line-clamp-1 leading-snug">
                     {exam.title}
                   </CardTitle>
                   {renderStatusBadge(exam.status)}
                 </div>
                 {exam.instructions && (
-                  <CardDescription className="text-xs line-clamp-2 pt-1">
+                  <CardDescription className="text-xs line-clamp-2 pt-1 text-muted-foreground">
                     {exam.instructions}
                   </CardDescription>
                 )}
               </CardHeader>
 
-              <CardContent className="space-y-3 py-2 text-xs text-neutral-600 dark:text-neutral-400">
+              <CardContent className="space-y-3 py-2 text-xs text-muted-foreground">
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <div className="flex items-center gap-1.5">
-                    <HelpCircle className="w-3.5 h-3.5 text-blue-500" />
-                    <span>{exam.question_count} {exam.question_count === 1 ? 'Question' : 'Questions'}</span>
+                    <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span>{exam.question_count} {exam.question_count === 1 ? 'question' : 'questions'}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-500" />
+                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                     <span>{exam.duration_min} mins</span>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
                   {exam.negative_marking > 0 ? (
-                    <Badge variant="outline" className="border-red-300 text-red-600 dark:border-red-900 bg-red-50/50 py-0">
-                      -{Math.round(exam.negative_marking * 100)}% Wrong
+                    <Badge variant="outline" className="border-destructive/40 text-destructive bg-destructive/10 py-0 rounded text-[11px]">
+                      -{Math.round(exam.negative_marking * 100)}% wrong
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-neutral-500 py-0">
-                      No Negative Marking
+                    <Badge variant="outline" className="text-muted-foreground border-border py-0 rounded text-[11px]">
+                      No penalty
                     </Badge>
                   )}
 
                   {exam.shuffle && (
-                    <Badge variant="outline" className="border-purple-300 text-purple-600 dark:border-purple-900 bg-purple-50/50 py-0 flex items-center gap-1">
-                      <Shuffle className="w-2.5 h-2.5" /> Shuffled
+                    <Badge variant="outline" className="border-border text-muted-foreground py-0 rounded text-[11px] flex items-center gap-1">
+                      <Shuffle className="w-3 h-3" /> Shuffled
                     </Badge>
                   )}
                 </div>
 
                 {(exam.open_at || exam.close_at) && (
-                  <div className="text-[11px] text-neutral-500 pt-1 flex items-center gap-1">
+                  <div className="text-xs text-muted-foreground pt-1 flex items-center gap-1.5">
                     <Calendar className="w-3 h-3" />
                     <span>
                       {exam.open_at ? new Date(exam.open_at).toLocaleDateString() : 'Now'} —{' '}
@@ -452,10 +457,10 @@ export default function TeacherExamsPage() {
                 )}
               </CardContent>
 
-              <CardFooter className="pt-3 border-t border-neutral-100 dark:border-neutral-800/60 flex items-center justify-between gap-2">
+              <CardFooter className="pt-3 border-t border-border flex items-center justify-between gap-2">
                 <Link
                   href={`/teacher/exams/${exam.id}`}
-                  className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'flex-1 text-xs')}
+                  className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'flex-1 text-xs rounded-lg h-9')}
                 >
                   <Edit className="w-3.5 h-3.5 mr-1.5" />
                   Edit
@@ -463,10 +468,10 @@ export default function TeacherExamsPage() {
 
                 <Link
                   href={`/teacher/exams/${exam.id}/results`}
-                  className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'flex-1 text-xs')}
+                  className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'flex-1 text-xs rounded-lg h-9')}
                   title="View Class Results"
                 >
-                  <BarChart3 className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
+                  <BarChart3 className="w-3.5 h-3.5 mr-1.5 text-primary" />
                   Results
                 </Link>
 
@@ -475,11 +480,11 @@ export default function TeacherExamsPage() {
                   size="sm"
                   onClick={() => handleDeleteExam(exam.id, exam.title)}
                   disabled={deletingId === exam.id}
-                  className="text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 h-8 px-2"
+                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-9 px-2.5 rounded-lg"
                   title="Delete Exam"
                 >
                   {deletingId === exam.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-red-600" />
+                    <Loader2 className="w-4 h-4 animate-spin text-destructive" />
                   ) : (
                     <Trash2 className="w-4 h-4" />
                   )}

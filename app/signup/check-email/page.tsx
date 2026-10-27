@@ -4,10 +4,10 @@ import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, CheckCircle2, AlertCircle, Loader2, ArrowLeft, RefreshCw } from 'lucide-react';
+import { AppMessage } from '@/components/ui/app-message';
+import { Mail, Loader2, ArrowLeft } from 'lucide-react';
 
 function CheckEmailContent() {
   const searchParams = useSearchParams();
@@ -21,7 +21,7 @@ function CheckEmailContent() {
 
   const handleResend = async () => {
     if (!email) {
-      setErrorMsg('No email address provided. Please go back to the signup page.');
+      setErrorMsg('No email address provided. Please return to sign up.');
       return;
     }
 
@@ -49,10 +49,9 @@ function CheckEmailContent() {
         throw new Error(error.message);
       }
 
-      setSuccessMsg(`Verification email has been resent to ${email}!`);
+      setSuccessMsg(`Confirmation email resent to ${email}. Check your inbox.`);
       setCooldown(30);
 
-      // Decrement cooldown timer
       const interval = setInterval(() => {
         setCooldown((prev) => {
           if (prev <= 1) {
@@ -63,101 +62,74 @@ function CheckEmailContent() {
         });
       }, 1000);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to resend verification email.');
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to resend confirmation email.');
     } finally {
       setResending(false);
     }
   };
 
   return (
-    <Card className="w-full max-w-md shadow-lg border-neutral-200/80 dark:border-neutral-800 text-center">
-      <CardHeader className="space-y-3 pb-4">
-        <div className="mx-auto w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center border border-blue-200 dark:border-blue-900 shadow-sm">
-          <Mail className="w-7 h-7" />
+    <div className="w-full max-w-sm mx-auto space-y-6">
+      <div className="text-left space-y-1">
+        <div className="flex items-center gap-2 mb-2 text-primary font-bold text-lg">
+          <Mail className="w-5 h-5" />
+          <span>Confirm Email</span>
         </div>
-        <div>
-          <CardTitle className="text-xl font-bold tracking-tight">
-            Check Your Email
-          </CardTitle>
-          <CardDescription className="text-xs text-neutral-500 mt-1 max-w-sm mx-auto">
-            We have sent a confirmation link to{' '}
-            <strong className="text-neutral-900 dark:text-neutral-100">{email || 'your email address'}</strong>.
-            Please click the link in that email to confirm your account.
-          </CardDescription>
-        </div>
-      </CardHeader>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Check Your Inbox</h1>
+        <p className="text-sm text-muted-foreground">
+          We sent a confirmation link to <strong className="text-foreground">{email || 'your email'}</strong>. Click the link to activate your account.
+        </p>
+      </div>
 
-      <CardContent className="space-y-4">
-        {successMsg && (
-          <Alert className="border-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 py-2.5 text-left">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            <AlertDescription className="text-xs font-medium">{successMsg}</AlertDescription>
-          </Alert>
-        )}
+      <Card className="rounded-lg border border-border shadow-sm bg-card">
+        <CardContent className="p-6 space-y-4">
+          {successMsg && <AppMessage message={successMsg} type="success" />}
+          {errorMsg && <AppMessage message={errorMsg} type="error" />}
 
-        {errorMsg && (
-          <Alert variant="destructive" className="py-2.5 text-left">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-xs">{errorMsg}</AlertDescription>
-          </Alert>
-        )}
-
-        <div className="p-3 bg-neutral-50 dark:bg-neutral-900/50 rounded-lg border border-neutral-200/70 dark:border-neutral-800 text-xs text-neutral-600 dark:text-neutral-400 space-y-1 text-left">
-          <p className="font-semibold text-neutral-800 dark:text-neutral-200">
-            Didn&apos;t receive the email?
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            The link is valid for 24 hours. If you do not see it within a couple of minutes, check your spam folder.
           </p>
-          <ul className="list-disc list-inside space-y-0.5 text-[11px] text-neutral-500">
-            <li>Check your spam or junk folder.</li>
-            <li>Ensure you typed the correct email address.</li>
-            <li>Wait a minute and request a new link below.</li>
-          </ul>
-        </div>
 
-        <Button
-          onClick={handleResend}
-          disabled={resending || cooldown > 0 || !email}
-          variant="outline"
-          className="w-full h-9 text-xs font-semibold"
-        >
-          {resending ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-              Resending Verification Email...
-            </>
-          ) : cooldown > 0 ? (
-            `Resend in ${cooldown}s`
-          ) : (
-            <>
-              <RefreshCw className="w-3.5 h-3.5 mr-2 text-neutral-500" />
-              Resend verification email
-            </>
-          )}
-        </Button>
-      </CardContent>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleResend}
+            disabled={resending || cooldown > 0}
+            className="w-full h-10 text-sm font-medium rounded-lg"
+          >
+            {resending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Resending...
+              </>
+            ) : cooldown > 0 ? (
+              `Resend in ${cooldown}s`
+            ) : (
+              'Resend Confirmation Email'
+            )}
+          </Button>
+        </CardContent>
 
-      <CardFooter className="flex justify-center border-t border-neutral-100 dark:border-neutral-900 pt-3">
-        <Link
-          href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}
-          className="text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 flex items-center gap-1 font-medium"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In
-        </Link>
-      </CardFooter>
-    </Card>
+        <CardFooter className="px-6 py-4 border-t border-border bg-muted/30 rounded-b-lg text-center justify-center">
+          <Link
+            href="/login"
+            className="text-xs text-muted-foreground hover:text-foreground font-medium inline-flex items-center gap-1.5"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Return to sign in
+          </Link>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }
 
 export default function CheckEmailPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 px-4 py-8">
-      <Suspense fallback={
-        <div className="flex flex-col items-center justify-center space-y-2">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-          <p className="text-xs text-neutral-400">Loading...</p>
-        </div>
-      }>
+    <main className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-background">
+      <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
         <CheckEmailContent />
       </Suspense>
-    </div>
+    </main>
   );
 }

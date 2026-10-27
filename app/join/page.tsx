@@ -3,11 +3,10 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AppMessage } from '@/components/ui/app-message';
 import { cn } from '@/lib/utils';
 import { MESSAGES } from '@/lib/messages';
@@ -15,11 +14,9 @@ import {
   Users,
   CheckCircle2,
   Clock,
-  AlertCircle,
   XCircle,
   Loader2,
   ArrowRight,
-  BookOpen,
 } from 'lucide-react';
 
 type JoinResultType =
@@ -73,7 +70,6 @@ function JoinClassForm() {
   const [resultClass, setResultClass] = useState<{ id: string; name: string } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Sync any newly provided code in URL to sessionStorage
   useEffect(() => {
     const urlCode = searchParams.get('code');
     if (urlCode) {
@@ -81,13 +77,12 @@ function JoinClassForm() {
       try {
         sessionStorage.setItem('pending_join_code', normalized);
       } catch {
-        // Ignore storage access errors
+        // Ignore
       }
     }
   }, [searchParams]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only allow alphanumeric characters, uppercase, max length 6
     const clean = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
     setCode(clean);
     if (resultType) {
@@ -102,13 +97,13 @@ function JoinClassForm() {
     const normalizedCode = code.trim().toUpperCase();
 
     if (!normalizedCode) {
-      setErrorMessage('Please enter a 6-character class code.');
+      setErrorMessage('Enter your 6-character class code.');
       codeInputRef.current?.focus();
       return;
     }
 
     if (normalizedCode.length !== 6) {
-      setErrorMessage('Class codes are exactly 6 characters long.');
+      setErrorMessage('Class codes are exactly 6 characters.');
       codeInputRef.current?.focus();
       return;
     }
@@ -133,7 +128,6 @@ function JoinClassForm() {
       }
 
       if (!res.ok) {
-        // Generic invalid or disabled code
         setResultType('invalid_code');
         return;
       }
@@ -141,7 +135,6 @@ function JoinClassForm() {
       const data = body as JoinResponseData;
       setResultClass(data.class || null);
 
-      // Clear pending storage code on successful submit
       try {
         sessionStorage.removeItem('pending_join_code');
       } catch {
@@ -153,7 +146,6 @@ function JoinClassForm() {
       } else if (data.status === 'rejected') {
         setResultType('declined');
       } else if (data.status === 'pending') {
-        // Check message to distinguish newly submitted vs already pending
         const msg = (data.message || '').toLowerCase();
         if (msg.includes('already pending')) {
           setResultType('already_pending');
@@ -183,195 +175,163 @@ function JoinClassForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto py-4 sm:py-8 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
-          Join a Class
-        </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-          Enter the 6-character code provided by your instructor to request access.
+    <div className="w-full max-w-sm mx-auto space-y-6">
+      <div className="text-left space-y-1">
+        <div className="flex items-center gap-2 mb-2 text-primary font-bold text-lg">
+          <Users className="w-5 h-5" />
+          <span>Classes</span>
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Join a Class</h1>
+        <p className="text-sm text-muted-foreground">
+          Enter the 6-character code given by your teacher to request access.
         </p>
       </div>
 
-      {/* Result feedback cards */}
       {resultType === 'new_pending' && (
-        <Card className="border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20">
-          <CardContent className="pt-6 space-y-3">
-            <div className="flex items-start gap-3">
-              <Clock className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h3 className="font-semibold text-sm text-amber-950 dark:text-amber-100">
-                  Request sent, waiting for your teacher to approve
-                </h3>
-                <p className="text-xs text-amber-800/90 dark:text-amber-300/80 leading-relaxed">
-                  {resultClass?.name ? (
-                    <>
-                      Your membership request for{' '}
-                      <strong>{resultClass.name}</strong> has been submitted. You will be able to take exams as soon as your teacher approves it.
-                    </>
-                  ) : (
-                    'Your membership request has been submitted. You will be able to take exams as soon as your teacher approves it.'
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row gap-2">
-              <Link
-                href="/classes"
-                className={cn(
-                  buttonVariants({ variant: 'default', size: 'sm' }),
-                  'w-full sm:w-auto text-xs bg-amber-600 hover:bg-amber-700 text-white'
+        <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 space-y-3">
+          <div className="flex items-start gap-2.5">
+            <Clock className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="font-semibold text-sm text-foreground">
+                Request sent, waiting for teacher approval
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {resultClass?.name ? (
+                  <>
+                    Your request to join <strong>{resultClass.name}</strong> was submitted. You will see assigned exams once approved.
+                  </>
+                ) : (
+                  'Your request was submitted. You will see assigned exams once approved.'
                 )}
-              >
-                <Users className="w-3.5 h-3.5 mr-1.5" />
-                View My Classes
-              </Link>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleReset}
-                className="w-full sm:w-auto text-xs"
-              >
-                Join Another Class
-              </Button>
+              </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="pt-1 flex flex-col sm:flex-row gap-2">
+            <Link
+              href="/classes"
+              className={cn(
+                buttonVariants({ variant: 'default', size: 'sm' }),
+                'w-full sm:w-auto h-8 text-xs rounded-lg'
+              )}
+            >
+              View My Classes
+            </Link>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="w-full sm:w-auto h-8 text-xs rounded-lg"
+            >
+              Join Another
+            </Button>
+          </div>
+        </div>
       )}
 
       {resultType === 'already_pending' && (
-        <Card className="border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20">
-          <CardContent className="pt-6 space-y-3">
-            <div className="flex items-start gap-3">
-              <Clock className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h3 className="font-semibold text-sm text-amber-950 dark:text-amber-100">
-                  Your request is pending
-                </h3>
-                <p className="text-xs text-amber-800/90 dark:text-amber-300/80 leading-relaxed">
-                  {resultClass?.name ? (
-                    <>
-                      You already have a pending request for{' '}
-                      <strong>{resultClass.name}</strong>. Waiting for your teacher to review and approve your request.
-                    </>
-                  ) : (
-                    'You already have a pending request for this class. Waiting for teacher approval.'
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row gap-2">
-              <Link
-                href="/classes"
-                className={cn(
-                  buttonVariants({ variant: 'default', size: 'sm' }),
-                  'w-full sm:w-auto text-xs bg-amber-600 hover:bg-amber-700 text-white'
+        <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 space-y-3">
+          <div className="flex items-start gap-2.5">
+            <Clock className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="font-semibold text-sm text-foreground">Your request is pending</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {resultClass?.name ? (
+                  <>
+                    You already have a pending request for <strong>{resultClass.name}</strong>.
+                  </>
+                ) : (
+                  'You already have a pending request for this class.'
                 )}
-              >
-                <Users className="w-3.5 h-3.5 mr-1.5" />
-                View My Classes
-              </Link>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleReset}
-                className="w-full sm:w-auto text-xs"
-              >
-                Join Another Class
-              </Button>
+              </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="pt-1 flex flex-col sm:flex-row gap-2">
+            <Link
+              href="/classes"
+              className={cn(
+                buttonVariants({ variant: 'default', size: 'sm' }),
+                'w-full sm:w-auto h-8 text-xs rounded-lg'
+              )}
+            >
+              View My Classes
+            </Link>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="w-full sm:w-auto h-8 text-xs rounded-lg"
+            >
+              Try Another Code
+            </Button>
+          </div>
+        </div>
       )}
 
       {resultType === 'already_member' && (
-        <Card className="border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20">
-          <CardContent className="pt-6 space-y-3">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h3 className="font-semibold text-sm text-emerald-950 dark:text-emerald-100">
-                  You are already a member
-                </h3>
-                <p className="text-xs text-emerald-800/90 dark:text-emerald-300/80 leading-relaxed">
-                  {resultClass?.name ? (
-                    <>
-                      You are an approved member of{' '}
-                      <strong>{resultClass.name}</strong>. You have immediate access to any exams published for this class.
-                    </>
-                  ) : (
-                    'You are already an approved member of this class.'
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row gap-2">
-              <Link
-                href="/exams"
-                className={cn(
-                  buttonVariants({ variant: 'default', size: 'sm' }),
-                  'w-full sm:w-auto text-xs bg-emerald-600 hover:bg-emerald-700 text-white'
+        <div className="rounded-lg border border-success/40 bg-success/10 p-4 space-y-3">
+          <div className="flex items-start gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="font-semibold text-sm text-foreground">Already a member</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {resultClass?.name ? (
+                  <>
+                    You are already enrolled in <strong>{resultClass.name}</strong>.
+                  </>
+                ) : (
+                  'You are already enrolled in this class.'
                 )}
-              >
-                <BookOpen className="w-3.5 h-3.5 mr-1.5" />
-                Browse Exams
-              </Link>
-              <Link
-                href="/classes"
-                className={cn(
-                  buttonVariants({ variant: 'outline', size: 'sm' }),
-                  'w-full sm:w-auto text-xs'
-                )}
-              >
-                View My Classes
-              </Link>
+              </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="pt-1">
+            <Link
+              href="/exams"
+              className={cn(
+                buttonVariants({ variant: 'default', size: 'sm' }),
+                'w-full sm:w-auto h-8 text-xs rounded-lg'
+              )}
+            >
+              View Available Exams
+            </Link>
+          </div>
+        </div>
       )}
 
       {resultType === 'declined' && (
-        <Card className="border-red-200 dark:border-red-900/60 bg-red-50/50 dark:bg-red-950/20">
-          <CardContent className="pt-6 space-y-3">
-            <div className="flex items-start gap-3">
-              <XCircle className="w-6 h-6 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h3 className="font-semibold text-sm text-red-950 dark:text-red-100">
-                  Your request was declined
-                </h3>
-                <p className="text-xs text-red-800/90 dark:text-red-300/80 leading-relaxed">
-                  Your request to join this class was declined by the instructor. Please contact your teacher if you believe this is in error.
-                </p>
-              </div>
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 space-y-3">
+          <div className="flex items-start gap-2.5">
+            <XCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="font-semibold text-sm text-foreground">Request was declined</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Your request to join this class was declined. Speak with your teacher if this was unexpected.
+              </p>
             </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row gap-2">
-              <Link
-                href="/classes"
-                className={cn(
-                  buttonVariants({ variant: 'outline', size: 'sm' }),
-                  'w-full sm:w-auto text-xs'
-                )}
-              >
-                View My Classes
-              </Link>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleReset}
-                className="w-full sm:w-auto text-xs"
-              >
-                Try Another Code
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="pt-1 flex flex-col sm:flex-row gap-2">
+            <Link
+              href="/classes"
+              className={cn(
+                buttonVariants({ variant: 'outline', size: 'sm' }),
+                'w-full sm:w-auto h-8 text-xs rounded-lg'
+              )}
+            >
+              View My Classes
+            </Link>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="w-full sm:w-auto h-8 text-xs rounded-lg"
+            >
+              Try Another Code
+            </Button>
+          </div>
+        </div>
       )}
 
       {resultType === 'rate_limited' && (
@@ -386,50 +346,39 @@ function JoinClassForm() {
         <AppMessage message={errorMessage} type="error" />
       )}
 
-      {/* Main Join Input Card */}
-      <Card className="border-neutral-200/80 dark:border-neutral-800 shadow-sm">
+      <Card className="rounded-lg border border-border shadow-sm bg-card">
         <form onSubmit={handleSubmit}>
-          <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-base font-semibold">Class Code</CardTitle>
-            <CardDescription className="text-xs">
-              Codes are 6 alphanumeric characters and are not case-sensitive.
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="join-code" className="text-xs font-medium sr-only">
-                Class Join Code
+          <CardContent className="p-6 space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="join-code" className="text-sm font-medium">
+                6-Character Code
               </Label>
-              <div className="relative">
-                <Input
-                  ref={codeInputRef}
-                  id="join-code"
-                  type="text"
-                  value={code}
-                  onChange={handleInputChange}
-                  placeholder="e.g. 29XAB8"
-                  maxLength={6}
-                  disabled={submitting}
-                  autoFocus
-                  aria-invalid={!!errorMessage || resultType === 'invalid_code'}
-                  className={cn(
-                    "font-mono text-center text-2xl tracking-[0.25em] uppercase font-bold h-14 bg-neutral-50/50 dark:bg-neutral-900/50 border-neutral-300 dark:border-neutral-700",
-                    (errorMessage || resultType === 'invalid_code') && "border-red-500 focus-visible:ring-red-400"
-                  )}
-                />
-              </div>
-              <p className="text-[11px] text-neutral-400 text-center">
-                Never share class codes with individuals outside your school or institution.
+              <Input
+                ref={codeInputRef}
+                id="join-code"
+                type="text"
+                value={code}
+                onChange={handleInputChange}
+                placeholder="ABC123"
+                maxLength={6}
+                disabled={submitting}
+                autoFocus
+                aria-invalid={!!errorMessage || resultType === 'invalid_code'}
+                className={cn(
+                  'font-mono text-center text-xl tracking-widest uppercase font-semibold h-11 rounded-lg border-input',
+                  (errorMessage || resultType === 'invalid_code') &&
+                    'border-destructive focus-visible:ring-destructive'
+                )}
+              />
+              <p className="text-xs text-muted-foreground">
+                Class codes are not case-sensitive.
               </p>
             </div>
-          </CardContent>
 
-          <CardFooter className="flex flex-col gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-900">
             <Button
               type="submit"
               disabled={submitting || code.trim().length !== 6}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              className="w-full h-10 text-base font-medium rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm cursor-pointer mt-2"
             >
               {submitting ? (
                 <>
@@ -443,35 +392,36 @@ function JoinClassForm() {
                 </>
               )}
             </Button>
+          </CardContent>
+
+          <CardFooter className="px-6 py-4 border-t border-border bg-muted/30 rounded-b-lg text-center justify-center">
+            <Link
+              href="/classes"
+              className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
+            >
+              <Users className="w-3.5 h-3.5" />
+              View your existing classes and enrollment status
+            </Link>
           </CardFooter>
         </form>
       </Card>
-
-      {/* Quick Navigation Footer */}
-      <div className="text-center">
-        <Link
-          href="/classes"
-          className="text-xs text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300 inline-flex items-center gap-1.5"
-        >
-          <Users className="w-3.5 h-3.5" />
-          View all your classes and membership status
-        </Link>
-      </div>
     </div>
   );
 }
 
 export default function JoinPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-3">
-          <Loader2 className="w-7 h-7 animate-spin text-blue-600" />
-          <p className="text-xs text-neutral-400">Loading join portal...</p>
-        </div>
-      }
-    >
-      <JoinClassForm />
-    </Suspense>
+    <main className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-background">
+      <Suspense
+        fallback={
+          <div className="flex flex-col items-center justify-center p-8 space-y-2 text-muted-foreground text-sm">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <p>Loading class portal...</p>
+          </div>
+        }
+      >
+        <JoinClassForm />
+      </Suspense>
+    </main>
   );
 }

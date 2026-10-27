@@ -454,13 +454,13 @@ export default function StudentExamTakePage({
       )}
 
       {/* Top Test Header Bar */}
-      <div className="sticky top-16 z-30 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md border border-neutral-200/80 dark:border-neutral-800 rounded-xl p-3 sm:p-4 shadow-sm flex items-center justify-between gap-3">
+      <div className="sticky top-16 z-30 bg-card/95 backdrop-blur-md border border-border rounded-lg p-3 sm:p-4 shadow-sm flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="hidden sm:block">
-            <h1 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 line-clamp-1">
+            <h1 className="text-sm font-semibold text-foreground line-clamp-1">
               {exam.title}
             </h1>
-            <p className="text-[11px] text-neutral-500">
+            <p className="text-xs text-muted-foreground">
               Question {currentIndex + 1} of {questions.length}
             </p>
           </div>
@@ -469,32 +469,32 @@ export default function StudentExamTakePage({
             variant="outline"
             size="sm"
             onClick={() => setMobilePaletteOpen(true)}
-            className="sm:hidden text-xs h-8"
+            className="sm:hidden text-xs h-9 rounded-lg"
           >
-            <LayoutGrid className="w-3.5 h-3.5 mr-1 text-blue-600" />
-            Palette ({answeredCount}/{questions.length})
+            <LayoutGrid className="w-4 h-4 mr-1 text-primary" />
+            Questions ({answeredCount}/{questions.length})
           </Button>
         </div>
 
         {/* Server Countdown Clock */}
         <div className="flex items-center gap-3">
           <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono font-bold text-sm sm:text-base border transition-colors ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-mono font-bold text-base sm:text-lg border transition-colors ${
               (remainingSeconds ?? 999) <= 60
-                ? 'bg-red-50 dark:bg-red-950/40 border-red-300 text-red-600 animate-pulse'
+                ? 'bg-destructive/10 border-destructive/40 text-destructive'
                 : (remainingSeconds ?? 999) <= 300
-                ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-700'
-                : 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200'
+                ? 'bg-warning/10 border-warning/40 text-warning'
+                : 'bg-secondary border-border text-foreground'
             }`}
           >
-            <Clock className="w-4 h-4 text-neutral-500" />
+            <Clock className="w-4 h-4 text-muted-foreground" />
             <span>{formatTimer(remainingSeconds)}</span>
           </div>
 
           <Button
             size="sm"
             onClick={() => setConfirmSubmitOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs h-8 sm:h-9 shadow-sm"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs sm:text-sm h-9 px-3 rounded-lg cursor-pointer"
           >
             <Send className="w-3.5 h-3.5 sm:mr-1.5" />
             <span className="hidden sm:inline">Finish & Submit</span>
@@ -504,46 +504,46 @@ export default function StudentExamTakePage({
       </div>
 
       {/* Main Area: Question View & Question Palette */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
-        {/* Left Column: Active Question (One at a time) */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left Column: Active Question */}
         <div className="lg:col-span-3 space-y-4">
-          <Card className="border-neutral-200/80 dark:border-neutral-800 shadow-sm min-h-[420px] flex flex-col justify-between">
-            <CardHeader className="pb-3 border-b border-neutral-100 dark:border-neutral-800/80">
-              <div className="flex items-center justify-between gap-2">
+          <Card className="rounded-lg border border-border shadow-sm min-h-[420px] flex flex-col justify-between">
+            <CardHeader className="pb-4 border-b border-border">
+              <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-xs bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 px-2.5 py-1 rounded">
-                    Question #{currentIndex + 1}
+                  <span className="font-semibold text-xs bg-secondary text-secondary-foreground px-2.5 py-1 rounded">
+                    Question {currentIndex + 1}
                   </span>
                   {currentQ.topic && (
-                    <Badge variant="secondary" className="text-[10px]">
+                    <Badge variant="outline" className="text-xs font-normal">
                       {currentQ.topic}
                     </Badge>
                   )}
-                  <Badge variant="outline" className="text-[10px] font-medium text-neutral-500">
-                    {currentQ.marks} {currentQ.marks === 1 ? 'Mark' : 'Marks'}
-                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {currentQ.marks} {currentQ.marks === 1 ? 'mark' : 'marks'}
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   {/* Real-time Save Status Indicator */}
                   <div className="flex items-center text-xs">
                     {currentSaveStatus === 'saving' && (
-                      <span className="flex items-center gap-1 text-amber-600 text-[11px]">
-                        <Loader2 className="w-3 h-3 animate-spin" /> Saving...
+                      <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...
                       </span>
                     )}
                     {currentSaveStatus === 'saved' && (
-                      <span className="flex items-center gap-1 text-emerald-600 text-[11px]">
-                        <CheckCircle2 className="w-3 h-3" /> Saved
+                      <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Saved
                       </span>
                     )}
                     {currentSaveStatus === 'failed' && (
                       <button
                         onClick={() => saveAnswerToServer(currentQ.id, currentChosen || null)}
-                        className="flex items-center gap-1 text-red-600 text-[11px] hover:underline"
-                        title="Click to retry saving answer"
+                        className="flex items-center gap-1.5 text-destructive text-xs hover:underline font-medium"
+                        title="Retry saving answer"
                       >
-                        <RefreshCw className="w-3 h-3" /> Save failed (Retry)
+                        <RefreshCw className="w-3.5 h-3.5" /> Save failed (Retry)
                       </button>
                     )}
                   </div>
@@ -553,44 +553,44 @@ export default function StudentExamTakePage({
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleFlag(currentQ.id)}
-                    className={`h-7 px-2 text-xs ${
+                    className={`h-8 px-2.5 text-xs rounded-lg ${
                       isCurrentFlagged
-                        ? 'text-amber-600 bg-amber-50 dark:bg-amber-950/30'
-                        : 'text-neutral-400 hover:text-amber-600'
+                        ? 'text-amber-600 bg-amber-500/10 font-medium'
+                        : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    <Flag className={`w-3.5 h-3.5 mr-1 ${isCurrentFlagged ? 'fill-amber-600' : ''}`} />
-                    <span className="hidden sm:inline">{isCurrentFlagged ? 'Flagged' : 'Flag for Review'}</span>
+                    <Flag className={`w-3.5 h-3.5 mr-1.5 ${isCurrentFlagged ? 'fill-amber-600' : ''}`} />
+                    <span className="hidden sm:inline">{isCurrentFlagged ? 'Flagged' : 'Flag'}</span>
                   </Button>
                 </div>
               </div>
 
-              <p className="text-base sm:text-lg font-medium text-neutral-900 dark:text-neutral-100 pt-3 whitespace-pre-line leading-relaxed">
+              <p className="text-lg font-medium text-foreground pt-4 whitespace-pre-line leading-relaxed">
                 {currentQ.text}
               </p>
             </CardHeader>
 
-            <CardContent className="py-4 space-y-2.5 flex-1">
+            <CardContent className="py-5 space-y-3 flex-1">
               {currentSaveStatus === 'failed' && (
-                <Alert variant="destructive" className="py-2 text-xs">
-                  <AlertCircle className="w-3.5 h-3.5" />
+                <Alert variant="destructive" className="py-2.5 text-xs rounded-lg">
+                  <AlertCircle className="w-4 h-4" />
                   <AlertDescription>
-                    Network hiccup: your answer is retained on screen. Attempting to resave automatically...
+                    Network issue. Your answer is kept on screen and will retry automatically.
                   </AlertDescription>
                 </Alert>
               )}
 
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {currentOptions.map((opt) => {
                   const isSelected = currentChosen === opt.id;
                   return (
                     <label
                       key={opt.id}
                       onClick={() => handleSelectOption(currentQ.id, opt.id)}
-                      className={`flex items-start gap-3.5 p-3.5 rounded-xl border text-sm cursor-pointer transition-all ${
+                      className={`flex items-start gap-3.5 p-4 rounded-lg border text-base cursor-pointer transition-colors ${
                         isSelected
-                          ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 font-medium shadow-sm ring-1 ring-blue-500'
-                          : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900/60'
+                          ? 'border-primary bg-primary/5 text-foreground font-medium ring-1 ring-primary'
+                          : 'border-border hover:bg-secondary/40 text-foreground'
                       }`}
                     >
                       <input
@@ -598,29 +598,29 @@ export default function StudentExamTakePage({
                         name={`q-option-${currentQ.id}`}
                         checked={isSelected}
                         onChange={() => handleSelectOption(currentQ.id, opt.id)}
-                        className="text-blue-600 focus:ring-blue-500 w-4 h-4 mt-0.5 cursor-pointer"
+                        className="mt-1 h-4 w-4 cursor-pointer accent-primary"
                       />
-                      <span className="w-5 font-bold text-neutral-500 shrink-0">{opt.id}.</span>
-                      <span className="flex-1 leading-snug">{opt.text}</span>
+                      <span className="font-semibold text-muted-foreground shrink-0 w-5">{opt.id}.</span>
+                      <span className="flex-1 leading-normal">{opt.text}</span>
                     </label>
                   );
                 })}
               </div>
             </CardContent>
 
-            <CardFooter className="pt-3 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between">
+            <CardFooter className="pt-4 border-t border-border flex items-center justify-between">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
                 disabled={currentIndex === 0}
-                className="text-xs"
+                className="text-xs h-9 px-3 rounded-lg"
               >
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Previous
               </Button>
 
-              <div className="text-xs text-neutral-400">
+              <div className="text-xs text-muted-foreground">
                 Question {currentIndex + 1} of {questions.length}
               </div>
 
@@ -628,7 +628,7 @@ export default function StudentExamTakePage({
                 <Button
                   size="sm"
                   onClick={() => setCurrentIndex((prev) => Math.min(questions.length - 1, prev + 1))}
-                  className="text-xs"
+                  className="text-xs h-9 px-4 rounded-lg"
                 >
                   Next
                   <ChevronRight className="w-4 h-4 ml-1" />
@@ -637,9 +637,9 @@ export default function StudentExamTakePage({
                 <Button
                   size="sm"
                   onClick={() => setConfirmSubmitOpen(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
+                  className="text-xs h-9 px-4 rounded-lg bg-primary text-primary-foreground font-medium"
                 >
-                  <Send className="w-3.5 h-3.5 mr-1" />
+                  <Send className="w-3.5 h-3.5 mr-1.5" />
                   Review & Submit
                 </Button>
               )}
@@ -649,12 +649,12 @@ export default function StudentExamTakePage({
 
         {/* Right Column: Question Palette (Desktop) */}
         <div className="hidden lg:block space-y-4">
-          <Card className="border-neutral-200/80 dark:border-neutral-800 sticky top-36">
-            <CardHeader className="py-3 px-4 border-b border-neutral-100 dark:border-neutral-800/80">
-              <CardTitle className="text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
+          <Card className="rounded-lg border border-border shadow-sm sticky top-36">
+            <CardHeader className="py-3 px-4 border-b border-border">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Question Palette
               </CardTitle>
-              <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-1">
+              <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
                 <span>Answered: {answeredCount}/{questions.length}</span>
                 {flaggedCount > 0 && <span className="text-amber-600 font-medium">{flaggedCount} Flagged</span>}
               </div>
@@ -671,19 +671,19 @@ export default function StudentExamTakePage({
                     <button
                       key={q.id}
                       onClick={() => setCurrentIndex(idx)}
-                      className={`relative flex items-center justify-center h-8 rounded-lg font-bold text-xs transition-all ${
-                        isCurrent ? 'ring-2 ring-blue-600 ring-offset-2' : ''
+                      className={`relative flex items-center justify-center h-9 rounded-lg font-semibold text-xs transition-colors ${
+                        isCurrent ? 'ring-2 ring-primary ring-offset-1' : ''
                       } ${
                         hasAnswer
                           ? 'bg-emerald-600 text-white'
                           : isFlagged
-                          ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-300'
-                          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200'
+                          ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-400'
+                          : 'bg-secondary text-secondary-foreground border border-border hover:bg-secondary/70'
                       }`}
                     >
                       {idx + 1}
                       {isFlagged && (
-                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-1 ring-white" />
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-1 ring-background" />
                       )}
                     </button>
                   );
@@ -691,17 +691,17 @@ export default function StudentExamTakePage({
               </div>
 
               {/* Legend */}
-              <div className="space-y-1.5 pt-4 text-[11px] text-neutral-500 border-t border-neutral-100 dark:border-neutral-800 mt-4">
+              <div className="space-y-2 pt-4 text-xs text-muted-foreground border-t border-border mt-4">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded bg-emerald-600" />
                   <span>Answered</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-amber-100 border border-amber-400" />
-                  <span>Flagged for Review</span>
+                  <div className="w-3 h-3 rounded bg-amber-500/20 border border-amber-400" />
+                  <span>Flagged</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-neutral-100 border border-neutral-300" />
+                  <div className="w-3 h-3 rounded bg-secondary border border-border" />
                   <span>Unanswered</span>
                 </div>
               </div>
@@ -712,15 +712,15 @@ export default function StudentExamTakePage({
 
       {/* Mobile Question Palette Dialog */}
       <Dialog open={mobilePaletteOpen} onOpenChange={setMobilePaletteOpen}>
-        <DialogContent className="max-w-xs">
+        <DialogContent className="max-w-sm rounded-lg">
           <DialogHeader>
-            <DialogTitle className="text-sm">Question Navigation</DialogTitle>
+            <DialogTitle className="text-base">Question Navigation</DialogTitle>
             <DialogDescription className="text-xs">
               Answered: {answeredCount} of {questions.length}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-5 gap-2 py-3 max-h-[300px] overflow-y-auto">
+          <div className="grid grid-cols-5 gap-2.5 py-4 max-h-[340px] overflow-y-auto">
             {questions.map((q, idx) => {
               const hasAnswer = answers[q.id] !== undefined && answers[q.id] !== null && answers[q.id] !== '';
               const isFlagged = flagged.has(q.id);
@@ -733,19 +733,19 @@ export default function StudentExamTakePage({
                     setCurrentIndex(idx);
                     setMobilePaletteOpen(false);
                   }}
-                  className={`relative flex items-center justify-center h-8 rounded-lg font-bold text-xs ${
-                    isCurrent ? 'ring-2 ring-blue-600' : ''
+                  className={`relative flex items-center justify-center h-11 w-11 rounded-lg font-semibold text-sm transition-colors ${
+                    isCurrent ? 'ring-2 ring-primary ring-offset-1' : ''
                   } ${
                     hasAnswer
                       ? 'bg-emerald-600 text-white'
                       : isFlagged
-                      ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                      : 'bg-neutral-100 text-neutral-700 border border-neutral-200'
+                      ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-400'
+                      : 'bg-secondary text-secondary-foreground border border-border'
                   }`}
                 >
                   {idx + 1}
                   {isFlagged && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-1 ring-white" />
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-1 ring-background" />
                   )}
                 </button>
               );
@@ -756,18 +756,18 @@ export default function StudentExamTakePage({
 
       {/* 5-Minute Warning Modal */}
       <Dialog open={show5MinWarning} onOpenChange={setShow5MinWarning}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm rounded-lg">
           <DialogHeader>
-            <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-1">
+            <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mb-1">
               <Clock className="w-5 h-5" />
             </div>
-            <DialogTitle className="text-base text-amber-700">5 Minutes Remaining</DialogTitle>
-            <DialogDescription className="text-xs">
-              You have 5 minutes left to complete your exam. Review flagged questions before time runs out.
+            <DialogTitle className="text-base text-foreground">5 minutes remaining</DialogTitle>
+            <DialogDescription className="text-sm">
+              You have 5 minutes left. Review any flagged questions before time runs out.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button onClick={() => setShow5MinWarning(false)} size="sm">
+            <Button onClick={() => setShow5MinWarning(false)} size="sm" className="rounded-lg h-9">
               Continue Answering
             </Button>
           </DialogFooter>
@@ -776,18 +776,18 @@ export default function StudentExamTakePage({
 
       {/* 1-Minute Warning Modal */}
       <Dialog open={show1MinWarning} onOpenChange={setShow1MinWarning}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm rounded-lg">
           <DialogHeader>
-            <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-1 animate-bounce">
+            <div className="w-10 h-10 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-1">
               <AlertTriangle className="w-5 h-5" />
             </div>
-            <DialogTitle className="text-base text-red-600">1 Minute Remaining!</DialogTitle>
-            <DialogDescription className="text-xs">
+            <DialogTitle className="text-base text-destructive">1 minute remaining</DialogTitle>
+            <DialogDescription className="text-sm">
               Your exam will be automatically submitted as soon as the timer reaches 00:00.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button onClick={() => setShow1MinWarning(false)} size="sm" variant="destructive">
+            <Button onClick={() => setShow1MinWarning(false)} size="sm" variant="destructive" className="rounded-lg h-9">
               I Understand
             </Button>
           </DialogFooter>
@@ -796,52 +796,53 @@ export default function StudentExamTakePage({
 
       {/* Confirmation Submit Dialog */}
       <Dialog open={confirmSubmitOpen} onOpenChange={setConfirmSubmitOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-lg">
           <DialogHeader>
-            <DialogTitle className="text-lg">Ready to Submit Exam?</DialogTitle>
-            <DialogDescription className="text-xs">
-              Once submitted, your answers will be graded and you will not be able to change them.
+            <DialogTitle className="text-lg">Ready to submit?</DialogTitle>
+            <DialogDescription className="text-sm">
+              Once submitted, your answers will be marked and cannot be changed.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-2 text-xs">
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="p-3 bg-neutral-50 dark:bg-neutral-900 rounded-lg border">
-                <div className="text-lg font-bold text-neutral-800 dark:text-neutral-100">{questions.length}</div>
-                <div className="text-[10px] text-neutral-400">Total Questions</div>
+          <div className="space-y-4 py-2 text-sm">
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="p-3 bg-secondary rounded-lg">
+                <div className="text-xl font-semibold text-foreground">{questions.length}</div>
+                <div className="text-xs text-muted-foreground">Total</div>
               </div>
-              <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-lg border border-emerald-200">
-                <div className="text-lg font-bold text-emerald-700">{answeredCount}</div>
-                <div className="text-[10px] text-emerald-600">Answered</div>
+              <div className="p-3 bg-emerald-500/10 rounded-lg">
+                <div className="text-xl font-semibold text-emerald-600 dark:text-emerald-400">{answeredCount}</div>
+                <div className="text-xs text-muted-foreground">Answered</div>
               </div>
-              <div className="p-3 bg-amber-50/70 dark:bg-amber-950/30 rounded-lg border border-amber-200">
-                <div className="text-lg font-bold text-amber-700">{unansweredCount}</div>
-                <div className="text-[10px] text-amber-600">Unanswered</div>
+              <div className="p-3 bg-amber-500/10 rounded-lg">
+                <div className="text-xl font-semibold text-amber-600 dark:text-amber-400">{unansweredCount}</div>
+                <div className="text-xs text-muted-foreground">Unanswered</div>
               </div>
             </div>
 
             {flaggedCount > 0 && (
-              <Alert className="py-2 border-amber-300 bg-amber-50/50 text-amber-800 text-xs">
-                <Flag className="w-3.5 h-3.5 text-amber-600" />
+              <Alert className="py-2.5 border-amber-400 bg-amber-500/10 text-amber-800 dark:text-amber-300 text-xs rounded-lg">
+                <Flag className="w-4 h-4 text-amber-600" />
                 <AlertDescription>
-                  You still have {flaggedCount} question{flaggedCount === 1 ? '' : 's'} flagged for review.
+                  You still have {flaggedCount} {flaggedCount === 1 ? 'question' : 'questions'} flagged for review.
                 </AlertDescription>
               </Alert>
             )}
 
             {unansweredCount > 0 && (
-              <p className="text-neutral-500 text-[11px]">
-                Note: Unanswered questions will receive 0 marks.
+              <p className="text-muted-foreground text-xs">
+                Unanswered questions will receive 0 marks.
               </p>
             )}
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => setConfirmSubmitOpen(false)}
               disabled={submittingManual}
+              className="rounded-lg h-9"
             >
               Continue Test
             </Button>
@@ -849,7 +850,7 @@ export default function StudentExamTakePage({
               type="button"
               onClick={() => handleSubmitExam(false)}
               disabled={submittingManual}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+              className="rounded-lg h-9 bg-primary text-primary-foreground font-medium"
             >
               {submittingManual ? (
                 <>

@@ -327,34 +327,34 @@ export default function TeacherClassDetailPage({
       : members.filter((m) => m.status === memberStatusFilter);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Top Breadcrumb & Actions */}
       <div className="flex items-center justify-between">
         <Link
           href="/teacher/classes"
-          className="inline-flex items-center text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors"
+          className="inline-flex items-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-          Back to My Classes
+          Back to Classes
         </Link>
       </div>
 
       {/* Class Overview & Code Card */}
-      <Card className="shadow-xs border-neutral-200/80 dark:border-neutral-800">
+      <Card className="rounded-lg border border-border shadow-sm">
         <CardContent className="p-5 sm:p-6 space-y-6">
           {/* Header row: Editable Class Name */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-neutral-100 dark:border-neutral-800 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border pb-4">
             {isEditingName ? (
               <div className="flex items-center gap-2 w-full max-w-md">
                 <Input
                   value={editNameValue}
                   onChange={(e) => setEditNameValue(e.target.value)}
                   maxLength={100}
-                  className="font-bold text-lg"
+                  className="font-bold text-lg rounded-lg"
                   autoFocus
                   disabled={savingName}
                 />
-                <Button size="sm" onClick={handleSaveName} disabled={savingName || !editNameValue.trim()}>
+                <Button size="sm" onClick={handleSaveName} disabled={savingName || !editNameValue.trim()} className="rounded-lg h-9 bg-primary text-primary-foreground text-xs">
                   {savingName ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Save'}
                 </Button>
                 <Button
@@ -365,20 +365,21 @@ export default function TeacherClassDetailPage({
                     setIsEditingName(false);
                   }}
                   disabled={savingName}
+                  className="rounded-lg h-9 text-xs"
                 >
                   Cancel
                 </Button>
               </div>
             ) : (
               <div className="flex items-center gap-2 group">
-                <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
                   {cls.name}
                 </h1>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsEditingName(true)}
-                  className="h-8 w-8 p-0 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-lg"
                   title="Edit class name"
                 >
                   <Edit2 className="w-4 h-4" />
@@ -387,7 +388,7 @@ export default function TeacherClassDetailPage({
             )}
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-neutral-500">
+              <span className="text-xs text-muted-foreground">
                 Created {new Date(cls.created_at).toLocaleDateString()}
               </span>
             </div>
@@ -396,15 +397,15 @@ export default function TeacherClassDetailPage({
           {/* Join Code & Join Toggle Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
             {/* Join Code Highlight Box */}
-            <div className="lg:col-span-2 p-4 sm:p-5 rounded-xl bg-gradient-to-br from-blue-50/70 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200/60 dark:border-blue-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="lg:col-span-2 p-5 rounded-lg bg-secondary border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Class Join Code
                 </span>
-                <div className="text-3xl sm:text-4xl font-mono font-extrabold tracking-widest text-neutral-900 dark:text-neutral-50">
+                <div className="text-3xl sm:text-4xl font-mono font-bold tracking-widest text-foreground">
                   {cls.join_code}
                 </div>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                <p className="text-xs text-muted-foreground">
                   Share this 6-character code with students to let them request access.
                 </p>
               </div>
@@ -415,7 +416,7 @@ export default function TeacherClassDetailPage({
                   size="sm"
                   variant="outline"
                   onClick={handleCopyCode}
-                  className="text-xs bg-white dark:bg-neutral-900 shadow-xs"
+                  className="text-xs rounded-lg h-9"
                 >
                   {copiedCode ? (
                     <>
@@ -434,7 +435,7 @@ export default function TeacherClassDetailPage({
                   size="sm"
                   variant="outline"
                   onClick={handleCopyInviteLink}
-                  className="text-xs bg-white dark:bg-neutral-900 shadow-xs"
+                  className="text-xs rounded-lg h-9"
                 >
                   {copiedLink ? (
                     <>
@@ -444,7 +445,7 @@ export default function TeacherClassDetailPage({
                   ) : (
                     <>
                       <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                      Copy Invite Link
+                      Copy Link
                     </>
                   )}
                 </Button>
@@ -453,7 +454,7 @@ export default function TeacherClassDetailPage({
                   size="sm"
                   variant="ghost"
                   onClick={() => setRegenOpen(true)}
-                  className="text-xs text-neutral-600 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400"
+                  className="text-xs text-muted-foreground hover:text-destructive rounded-lg h-9"
                 >
                   <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                   Regenerate Code
@@ -462,10 +463,10 @@ export default function TeacherClassDetailPage({
             </div>
 
             {/* Joining Status Switch Box */}
-            <div className="p-5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 flex flex-col justify-between gap-3 h-full">
+            <div className="p-5 rounded-lg border border-border bg-secondary flex flex-col justify-between gap-3 h-full">
               <div className="flex items-center justify-between">
-                <Label htmlFor="join-toggle" className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                  Allow New Join Requests
+                <Label htmlFor="join-toggle" className="text-sm font-semibold text-foreground">
+                  Allow Join Requests
                 </Label>
                 <Switch
                   id="join-toggle"
@@ -474,16 +475,16 @@ export default function TeacherClassDetailPage({
                 />
               </div>
 
-              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+              <div className="text-xs text-muted-foreground">
                 {cls.join_enabled ? (
                   <span className="text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    Joining is active. Students can enter the code to submit join requests.
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    Joining is active. Students can enter the code to join.
                   </span>
                 ) : (
                   <span className="text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    Joining is locked. New students will receive an &quot;invalid or disabled&quot; notice.
+                    Joining is locked. Code is inactive.
                   </span>
                 )}
               </div>

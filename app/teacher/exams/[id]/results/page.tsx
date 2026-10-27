@@ -268,51 +268,50 @@ export default function TeacherExamResultsPage({
   );
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Top Breadcrumb & Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200/80 dark:border-neutral-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Link
               href={`/teacher/exams/${examId}`}
               className={cn(
                 buttonVariants({ variant: 'ghost', size: 'sm' }),
-                'text-xs -ml-2 text-neutral-500 hover:text-neutral-900 h-7'
+                'text-xs -ml-2 text-muted-foreground hover:text-foreground h-7'
               )}
             >
               <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-              Back to Exam Editor
+              Back to Exam
             </Link>
-            <span className="text-neutral-300 dark:text-neutral-700">/</span>
-            <span className="text-xs text-neutral-500 font-medium">Class Results</span>
+            <span className="text-muted-foreground/40">/</span>
+            <span className="text-xs text-muted-foreground font-medium">Results</span>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
               {exam.title}
             </h1>
-            <Badge variant="outline" className="text-xs font-medium capitalize">
+            <Badge variant="outline" className="text-xs font-normal capitalize rounded">
               {exam.status}
             </Badge>
           </div>
 
-          <p className="text-xs text-neutral-500">
-            {exam.questionCount} Questions • Duration: {exam.duration_min} mins • Max Score:{' '}
-            {exam.maxPossibleScore}
+          <p className="text-xs text-muted-foreground">
+            {exam.questionCount} {exam.questionCount === 1 ? 'question' : 'questions'} • Duration: {exam.duration_min} mins • Max marks: {exam.maxPossibleScore}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           {/* Class Filter Dropdown */}
           <div className="flex items-center gap-1.5">
-            <label htmlFor="class-filter-select" className="text-xs text-neutral-500 font-medium whitespace-nowrap">
+            <label htmlFor="class-filter-select" className="text-xs text-muted-foreground font-medium whitespace-nowrap">
               Class:
             </label>
             <select
               id="class-filter-select"
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
-              className="h-8 px-2 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs max-w-[180px] sm:max-w-[220px]"
+              className="h-9 px-3 text-xs font-medium rounded-lg border border-border bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-primary max-w-[180px] sm:max-w-[220px]"
             >
               <option value="all">All Assigned Classes</option>
               {assignedClasses.map((cls) => (
@@ -328,8 +327,8 @@ export default function TeacherExamResultsPage({
             size="sm"
             onClick={handleBulkGenerateAiFeedback}
             disabled={bulkGenerating || loading || stats.totalSubmissions === 0}
-            className="text-xs h-8 shadow-xs border-purple-300 text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/30"
-            title="Generate student automated feedback for all submitted attempts"
+            className="text-xs h-9 rounded-lg"
+            title="Generate student feedback for all submitted attempts"
           >
             {bulkGenerating ? (
               <>
@@ -338,7 +337,7 @@ export default function TeacherExamResultsPage({
               </>
             ) : (
               <>
-                <Sparkles className="w-3.5 h-3.5 mr-1.5 text-purple-600" />
+                <Sparkles className="w-3.5 h-3.5 mr-1.5 text-primary" />
                 Generate AI feedback for all students
               </>
             )}
@@ -348,7 +347,7 @@ export default function TeacherExamResultsPage({
             variant="outline"
             size="sm"
             onClick={fetchResults}
-            className="text-xs h-8 shadow-xs"
+            className="text-xs h-9 rounded-lg"
             disabled={loading || bulkGenerating}
           >
             <RotateCw className="w-3.5 h-3.5 mr-1.5" />
@@ -359,22 +358,22 @@ export default function TeacherExamResultsPage({
 
       {/* Bulk AI Feedback Progress / Rate Limit Banners */}
       {bulkRateLimited && (
-        <Alert variant="destructive" className="border-amber-300 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
+        <Alert variant="destructive" className="rounded-lg text-xs">
+          <AlertTriangle className="h-4 w-4" />
           <AlertTitle className="text-xs font-semibold">Rate limit reached</AlertTitle>
-          <AlertDescription className="text-xs">
+          <AlertDescription>
             Rate limit reached, try again in a minute. ({bulkProgress?.processed ?? 0} generated so far).
           </AlertDescription>
         </Alert>
       )}
 
       {bulkProgress && !bulkRateLimited && (
-        <Alert className="border-purple-200 bg-purple-50/50 dark:bg-purple-950/20 text-purple-900 dark:text-purple-200">
-          <Sparkles className="h-4 w-4 text-purple-600" />
+        <Alert className="border-border bg-secondary text-foreground rounded-lg text-xs">
+          <Sparkles className="h-4 w-4 text-primary" />
           <AlertTitle className="text-xs font-semibold">
             {bulkGenerating ? 'Generating Automated AI Feedback' : 'Bulk AI Feedback Status'}
           </AlertTitle>
-          <AlertDescription className="text-xs">
+          <AlertDescription>
             {bulkProgress.processed} of {bulkProgress.total} done
             {bulkProgress.failed > 0 && ` (${bulkProgress.failed} failed/skipped)`}.
             {bulkProgress.message && ` ${bulkProgress.message}.`}
@@ -384,68 +383,68 @@ export default function TeacherExamResultsPage({
 
       {/* Aggregate Overview Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-neutral-200/80 dark:border-neutral-800">
+        <Card className="rounded-lg border border-border shadow-sm">
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-xs text-neutral-500 font-medium">Submissions</span>
-              <div className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
+              <span className="text-xs text-muted-foreground font-medium">Submissions</span>
+              <div className="text-2xl font-bold tracking-tight text-foreground">
                 {stats.totalSubmissions}
               </div>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-secondary text-primary flex items-center justify-center">
               <Users className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-neutral-200/80 dark:border-neutral-800">
+        <Card className="rounded-lg border border-border shadow-sm">
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-xs text-neutral-500 font-medium">Class Average</span>
-              <div className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
+              <span className="text-xs text-muted-foreground font-medium">Class Average</span>
+              <div className="text-2xl font-bold tracking-tight text-foreground">
                 {stats.averageScore}
-                <span className="text-xs font-normal text-neutral-400 ml-1">
+                <span className="text-xs font-normal text-muted-foreground ml-1">
                   / {exam.maxPossibleScore}
                 </span>
               </div>
-              <span className="text-[11px] text-emerald-600 font-medium">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                 {stats.averagePercentage}% average
               </span>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-secondary text-emerald-600 flex items-center justify-center">
               <TrendingUp className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-neutral-200/80 dark:border-neutral-800">
+        <Card className="rounded-lg border border-border shadow-sm">
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-xs text-neutral-500 font-medium">High / Low Score</span>
-              <div className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
+              <span className="text-xs text-muted-foreground font-medium">High / Low Score</span>
+              <div className="text-2xl font-bold tracking-tight text-foreground">
                 {stats.highestScore}
-                <span className="text-sm font-normal text-neutral-400 mx-1">/</span>
-                <span className="text-lg font-semibold text-neutral-500">{stats.lowestScore}</span>
+                <span className="text-sm font-normal text-muted-foreground mx-1">/</span>
+                <span className="text-lg font-semibold text-muted-foreground">{stats.lowestScore}</span>
               </div>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-secondary text-primary flex items-center justify-center">
               <Award className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-neutral-200/80 dark:border-neutral-800">
+        <Card className="rounded-lg border border-border shadow-sm">
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div className="space-y-1">
-              <span className="text-xs text-neutral-500 font-medium">Average Time</span>
-              <div className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
+              <span className="text-xs text-muted-foreground font-medium">Average Time</span>
+              <div className="text-2xl font-bold tracking-tight text-foreground">
                 {formatDuration(stats.averageTimeSeconds)}
               </div>
-              <span className="text-[11px] text-neutral-400">
+              <span className="text-xs text-muted-foreground">
                 limit: {exam.duration_min} mins
               </span>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-secondary text-muted-foreground flex items-center justify-center">
               <Clock className="w-5 h-5" />
             </div>
           </CardContent>
@@ -497,14 +496,14 @@ export default function TeacherExamResultsPage({
 
       {/* Empty State when 0 Submissions */}
       {studentResults.length === 0 && (
-        <Card className="border-dashed border-2 border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30 text-center py-12">
+        <Card className="border-dashed border border-border bg-card text-center py-12 rounded-lg shadow-sm">
           <CardContent className="space-y-3">
-            <div className="mx-auto w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 flex items-center justify-center">
+            <div className="mx-auto w-12 h-12 rounded-lg bg-secondary text-primary flex items-center justify-center">
               <FileSpreadsheet className="w-6 h-6" />
             </div>
-            <CardTitle className="text-base font-semibold">No Submissions Yet</CardTitle>
-            <CardDescription className="text-xs text-neutral-500 max-w-sm mx-auto">
-              Students have not submitted any attempts for this exam yet. Once students take the exam, their scores, time taken, and question accuracy will update here automatically.
+            <CardTitle className="text-base font-semibold text-foreground">No submissions yet</CardTitle>
+            <CardDescription className="text-xs text-muted-foreground max-w-sm mx-auto">
+              Students have not submitted any attempts for this exam yet. Results will appear here once attempts are completed.
             </CardDescription>
           </CardContent>
         </Card>
@@ -512,10 +511,10 @@ export default function TeacherExamResultsPage({
 
       {/* VIEW 1: Student Submissions Table */}
       {studentResults.length > 0 && activeView === 'students' && (
-        <Card className="border-neutral-200/80 dark:border-neutral-800 overflow-hidden shadow-sm">
+        <Card className="border border-border overflow-hidden rounded-lg shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
-              <thead className="bg-neutral-50 dark:bg-neutral-900/50 border-b border-neutral-200/80 dark:border-neutral-800 text-neutral-500 uppercase tracking-wider font-semibold">
+              <thead className="sticky top-0 bg-secondary border-b border-border text-muted-foreground uppercase tracking-wider font-semibold">
                 <tr>
                   <th scope="col" className="px-4 py-3">
                     Student
@@ -539,14 +538,14 @@ export default function TeacherExamResultsPage({
                     Submitted At
                   </th>
                   <th scope="col" className="px-4 py-3 text-right">
-                    Feedback & Review
+                    Feedback
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-200/60 dark:divide-neutral-800">
+              <tbody className="divide-y divide-border">
                 {filteredStudents.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-neutral-500 text-xs">
+                    <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground text-xs">
                       No students matching &quot;{searchQuery}&quot; found.
                     </td>
                   </tr>
@@ -555,62 +554,62 @@ export default function TeacherExamResultsPage({
                     <tr
                       key={s.attemptId}
                       onClick={() => setSelectedAttemptId(s.attemptId)}
-                      className="hover:bg-blue-50/50 dark:hover:bg-neutral-800/60 cursor-pointer transition-colors"
+                      className="hover:bg-secondary/40 cursor-pointer transition-colors"
                     >
-                      <td className="px-4 py-3 font-semibold text-neutral-900 dark:text-neutral-100">
+                      <td className="px-4 py-3.5 font-medium text-foreground">
                         {s.studentName}
                       </td>
 
-                      <td className="px-4 py-3 text-center font-bold text-neutral-900 dark:text-neutral-100">
+                      <td className="px-4 py-3.5 text-center font-bold text-foreground">
                         {s.score}
-                        <span className="text-neutral-400 font-normal text-[11px] ml-0.5">
+                        <span className="text-muted-foreground font-normal text-xs ml-0.5">
                           / {s.maxPossibleScore}
                         </span>
                       </td>
 
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3.5 text-center">
                         <Badge
                           variant="outline"
                           className={cn(
-                            'text-[11px] font-bold py-0 h-5',
+                            'text-xs font-semibold py-0 h-5 rounded',
                             s.percentage >= 75
-                              ? 'border-emerald-300 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/20'
+                              ? 'border-emerald-400 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10'
                               : s.percentage >= 50
-                                ? 'border-blue-300 text-blue-700 bg-blue-50 dark:bg-blue-950/20'
-                                : 'border-red-300 text-red-700 bg-red-50 dark:bg-red-950/20'
+                                ? 'border-primary/40 text-primary bg-primary/5'
+                                : 'border-destructive/40 text-destructive bg-destructive/10'
                           )}
                         >
                           {s.percentage}%
                         </Badge>
                       </td>
 
-                      <td className="px-4 py-3 text-center text-[11px]">
-                        <span className="text-emerald-600 font-medium">✓ {s.correctCount}</span>
-                        <span className="text-neutral-300 mx-1">•</span>
-                        <span className="text-red-600 font-medium">✗ {s.wrongCount}</span>
-                        <span className="text-neutral-300 mx-1">•</span>
-                        <span className="text-neutral-500">− {s.skippedCount}</span>
+                      <td className="px-4 py-3.5 text-center text-xs">
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">✓ {s.correctCount}</span>
+                        <span className="text-muted-foreground/40 mx-1">•</span>
+                        <span className="text-destructive font-medium">✗ {s.wrongCount}</span>
+                        <span className="text-muted-foreground/40 mx-1">•</span>
+                        <span className="text-muted-foreground">− {s.skippedCount}</span>
                       </td>
 
-                      <td className="px-4 py-3 text-center font-medium text-neutral-600 dark:text-neutral-300">
+                      <td className="px-4 py-3.5 text-center font-medium text-muted-foreground">
                         {formatDuration(s.timeTakenSeconds)}
                       </td>
 
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3.5 text-center">
                         <Badge
                           variant="outline"
                           className={cn(
-                            'text-[11px] font-medium capitalize',
+                            'text-xs font-normal capitalize rounded',
                             s.status === 'auto_submitted'
-                              ? 'border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/20'
-                              : 'border-emerald-300 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/20'
+                              ? 'border-amber-400 text-amber-700 dark:text-amber-400 bg-amber-500/10'
+                              : 'border-emerald-400 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10'
                           )}
                         >
                           {s.status === 'auto_submitted' ? 'Auto-Submitted' : 'Submitted'}
                         </Badge>
                       </td>
 
-                      <td className="px-4 py-3 text-center text-neutral-500 text-[11px]">
+                      <td className="px-4 py-3.5 text-center text-muted-foreground text-xs">
                         {new Date(s.submittedAt).toLocaleDateString()}{' '}
                         {new Date(s.submittedAt).toLocaleTimeString([], {
                           hour: '2-digit',
@@ -618,7 +617,7 @@ export default function TeacherExamResultsPage({
                         })}
                       </td>
 
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3.5 text-right">
                         <Button
                           size="sm"
                           variant="outline"
@@ -626,9 +625,9 @@ export default function TeacherExamResultsPage({
                             e.stopPropagation();
                             setSelectedAttemptId(s.attemptId);
                           }}
-                          className="h-7 text-xs shadow-xs hover:border-blue-500 hover:text-blue-600"
+                          className="h-8 text-xs rounded-lg"
                         >
-                          <MessageSquare className="w-3.5 h-3.5 mr-1 text-blue-600" />
+                          <MessageSquare className="w-3.5 h-3.5 mr-1 text-primary" />
                           Feedback
                         </Button>
                       </td>

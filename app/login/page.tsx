@@ -46,7 +46,6 @@ function LoginForm() {
   const errorParam = searchParams.get('error');
   const isEmailUnconfirmed = emailUnconfirmedManual || errorParam === 'email_not_confirmed';
 
-  // Handle countdown for resend button
   React.useEffect(() => {
     if (resendCooldown <= 0) return;
     const timer = setInterval(() => {
@@ -60,13 +59,13 @@ function LoginForm() {
     const cleanEmail = email.trim();
 
     if (!cleanEmail) {
-      errors.email = 'Please enter your email address.';
+      errors.email = 'Enter your email address.';
     } else if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      errors.email = 'Please enter a valid email address.';
+      errors.email = 'Enter a valid email address.';
     }
 
     if (!password) {
-      errors.password = 'Please enter your password.';
+      errors.password = 'Enter your password.';
     }
 
     setFieldErrors(errors);
@@ -113,7 +112,6 @@ function LoginForm() {
       }
 
       if (data.user) {
-        // Double check confirmation
         if (!data.user.email_confirmed_at) {
           setEmailUnconfirmedManual(true);
           setPageMessage(MESSAGES.auth.emailNotConfirmed);
@@ -122,7 +120,6 @@ function LoginForm() {
           return;
         }
 
-        // Fetch user profile to determine role
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
@@ -150,7 +147,7 @@ function LoginForm() {
   const handleResendConfirmation = async () => {
     const cleanEmail = email.trim();
     if (!cleanEmail) {
-      setFieldErrors({ email: 'Please enter your email address to resend confirmation.' });
+      setFieldErrors({ email: 'Enter your email address to resend confirmation.' });
       emailInputRef.current?.focus();
       return;
     }
@@ -173,7 +170,7 @@ function LoginForm() {
       } else {
         setPageMessage({
           type: 'success',
-          message: `Confirmation email sent to ${cleanEmail}. Please check your inbox.`,
+          message: `Confirmation email sent to ${cleanEmail}. Check your inbox.`,
         });
         setResendCooldown(60);
       }
@@ -185,30 +182,18 @@ function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md px-4">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600 text-white mb-3 shadow-md shadow-blue-500/20">
-          <GraduationCap className="w-7 h-7" />
+    <div className="w-full max-w-sm mx-auto space-y-6">
+      <div className="text-left space-y-1">
+        <div className="flex items-center gap-2 mb-2 text-primary font-bold text-lg">
+          <GraduationCap className="w-6 h-6" />
+          <span>AI Exam Assistant</span>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
-          AI Exam Assistant
-        </h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-          Sign in to your account
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Sign In</h1>
+        <p className="text-sm text-muted-foreground">Enter your credentials to continue.</p>
       </div>
 
-      <Card className="shadow-lg border-neutral-200/80 dark:border-neutral-800">
-        <CardHeader className="pb-4">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-            Sign In
-          </h2>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            Enter your credentials to continue
-          </p>
-        </CardHeader>
-
-        <CardContent className="space-y-4 pt-0">
+      <Card className="rounded-lg border border-border shadow-sm bg-card">
+        <CardContent className="p-6 space-y-4">
           {pageMessage && (
             <AppMessage
               message={pageMessage}
@@ -222,13 +207,13 @@ function LoginForm() {
           )}
 
           {isEmailUnconfirmed && !pageMessage?.actionKey && (
-            <div className="p-3.5 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 space-y-2">
+            <div className="p-3.5 rounded-lg border border-warning/40 bg-warning/10 text-foreground space-y-2.5">
               <div className="flex items-start gap-2">
-                <Mail className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-                <div className="text-xs text-amber-800 dark:text-amber-300">
+                <Mail className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+                <div className="text-xs space-y-1">
                   <p className="font-semibold">Email confirmation required</p>
-                  <p className="mt-0.5">
-                    Didn&apos;t receive the email or did it expire? Click below to send a fresh confirmation link.
+                  <p className="text-muted-foreground">
+                    Check your inbox for your confirmation link, or request a new one below.
                   </p>
                 </div>
               </div>
@@ -238,11 +223,11 @@ function LoginForm() {
                 size="sm"
                 onClick={handleResendConfirmation}
                 disabled={resending || resendCooldown > 0 || !email.trim()}
-                className="w-full text-xs h-8 border-amber-400 hover:bg-amber-100 dark:border-amber-700 dark:hover:bg-amber-900/50"
+                className="w-full h-9 text-xs rounded-lg border-border"
               >
                 {resending ? (
                   <>
-                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                     Sending email...
                   </>
                 ) : resendCooldown > 0 ? (
@@ -256,12 +241,14 @@ function LoginForm() {
 
           <form onSubmit={handleSignIn} className="space-y-4" noValidate>
             <div className="space-y-1.5">
-              <Label htmlFor="signin-email">Email Address</Label>
+              <Label htmlFor="signin-email" className="text-sm font-medium">
+                Email Address
+              </Label>
               <Input
                 ref={emailInputRef}
                 id="signin-email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="you@school.edu"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
@@ -270,23 +257,26 @@ function LoginForm() {
                   }
                 }}
                 aria-invalid={!!fieldErrors.email}
-                className={cn(fieldErrors.email && 'border-red-500 focus-visible:ring-red-400')}
+                className={cn(
+                  'h-10 text-base rounded-lg',
+                  fieldErrors.email && 'border-destructive focus-visible:ring-destructive'
+                )}
                 autoComplete="email"
                 disabled={loading}
               />
               {fieldErrors.email && (
-                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                  {fieldErrors.email}
-                </p>
+                <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="signin-password">Password</Label>
+                <Label htmlFor="signin-password" className="text-sm font-medium">
+                  Password
+                </Label>
                 <Link
                   href="/forgot-password"
-                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  className="text-xs text-primary hover:underline font-medium"
                 >
                   Forgot password?
                 </Link>
@@ -304,18 +294,23 @@ function LoginForm() {
                   }
                 }}
                 aria-invalid={!!fieldErrors.password}
-                className={cn(fieldErrors.password && 'border-red-500 focus-visible:ring-red-400')}
+                className={cn(
+                  'h-10 text-base rounded-lg',
+                  fieldErrors.password && 'border-destructive focus-visible:ring-destructive'
+                )}
                 autoComplete="current-password"
                 disabled={loading}
               />
               {fieldErrors.password && (
-                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                  {fieldErrors.password}
-                </p>
+                <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
               )}
             </div>
 
-            <Button type="submit" className="w-full mt-2" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full h-10 text-base font-medium rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm cursor-pointer"
+              disabled={loading}
+            >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -328,22 +323,22 @@ function LoginForm() {
           </form>
         </CardContent>
 
-        <CardFooter className="pt-0 pb-4 text-center justify-center flex-col gap-2">
-          <p className="text-xs text-neutral-500">
-            Don&apos;t have an account yet?{' '}
+        <CardFooter className="px-6 py-4 border-t border-border bg-muted/30 rounded-b-lg flex flex-col gap-1.5 text-center text-xs text-muted-foreground">
+          <p>
+            Need a student account?{' '}
             <Link
               href={
                 searchParams.get('next')
                   ? `/signup?next=${encodeURIComponent(searchParams.get('next')!)}`
                   : '/signup'
               }
-              className="text-blue-600 font-semibold hover:underline dark:text-blue-400"
+              className="text-primary font-semibold hover:underline"
             >
-              Sign up as a student
+              Sign up
             </Link>
           </p>
-          <p className="text-[11px] text-neutral-400">
-            (Teacher accounts are provisioned by system administrator)
+          <p className="text-[11px] text-muted-foreground/80">
+            Teacher accounts are set up by your school administrator.
           </p>
         </CardFooter>
       </Card>
@@ -353,8 +348,8 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-neutral-50 dark:bg-neutral-950">
-      <Suspense fallback={<div className="text-sm text-neutral-500">Loading...</div>}>
+    <main className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-background">
+      <Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
         <LoginForm />
       </Suspense>
     </main>

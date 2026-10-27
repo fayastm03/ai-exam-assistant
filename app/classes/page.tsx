@@ -105,15 +105,15 @@ export default function MyClassesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl mx-auto pb-12">
       {/* Header with Title and "Join another class" action */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             My Classes
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            View your class enrollments and membership statuses.
+          <p className="text-sm text-muted-foreground mt-1">
+            View your enrolled classes and membership status.
           </p>
         </div>
 
@@ -122,22 +122,22 @@ export default function MyClassesPage() {
             href="/join"
             className={cn(
               buttonVariants({ variant: 'default', size: 'sm' }),
-              'w-full sm:w-auto text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white'
+              'w-full sm:w-auto text-xs font-medium rounded-lg h-9 px-3.5 bg-primary text-primary-foreground'
             )}
           >
             <PlusCircle className="w-4 h-4 mr-1.5" />
-            Join another class
+            Join a Class
           </Link>
         </div>
       </div>
 
       {/* Error alert */}
       {errorMsg && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="rounded-lg">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
             <span>{errorMsg}</span>
-            <Button size="sm" variant="outline" onClick={fetchData} className="ml-4 h-7 text-xs">
+            <Button size="sm" variant="outline" onClick={fetchData} className="ml-4 h-8 text-xs rounded-lg">
               <RotateCw className="w-3.5 h-3.5 mr-1" />
               Retry
             </Button>
@@ -149,14 +149,14 @@ export default function MyClassesPage() {
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="rounded-lg border border-border animate-pulse shadow-sm">
               <CardHeader className="space-y-2">
-                <div className="h-4 bg-neutral-200 dark:bg-neutral-800 rounded w-1/3" />
-                <div className="h-6 bg-neutral-200 dark:bg-neutral-800 rounded w-3/4" />
+                <div className="h-4 bg-secondary rounded w-1/3" />
+                <div className="h-6 bg-secondary rounded w-3/4" />
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="h-3 bg-neutral-200 dark:bg-neutral-800 rounded w-1/2" />
-                <div className="h-3 bg-neutral-200 dark:bg-neutral-800 rounded w-2/3" />
+                <div className="h-3 bg-secondary rounded w-1/2" />
+                <div className="h-3 bg-secondary rounded w-2/3" />
               </CardContent>
             </Card>
           ))}
@@ -165,20 +165,20 @@ export default function MyClassesPage() {
 
       {/* Empty state: Student has not joined any classes yet */}
       {!loading && !errorMsg && classes.length === 0 && (
-        <Card className="border-dashed py-12 text-center bg-neutral-50/50 dark:bg-neutral-900/50">
+        <Card className="rounded-lg border border-dashed border-border py-12 text-center bg-card shadow-sm">
           <CardContent className="flex flex-col items-center justify-center space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center">
-              <Users className="w-7 h-7" />
+            <div className="w-12 h-12 rounded-lg bg-secondary text-primary flex items-center justify-center">
+              <Users className="w-6 h-6" />
             </div>
             <div className="max-w-sm space-y-1">
-              <CardTitle className="text-lg">No classes joined yet</CardTitle>
-              <CardDescription className="text-xs">
-                You are not enrolled in any classes. Enter the 6-character join code provided by your instructor to get started.
+              <CardTitle className="text-base font-semibold text-foreground">No classes yet</CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Ask your teacher for a 6-character class code to join.
               </CardDescription>
             </div>
             <Link
               href="/join"
-              className={cn(buttonVariants({ variant: 'default', size: 'sm' }), 'text-xs font-medium')}
+              className={cn(buttonVariants({ variant: 'default', size: 'sm' }), 'text-xs font-medium rounded-lg h-9 px-4 bg-primary text-primary-foreground')}
             >
               <PlusCircle className="w-3.5 h-3.5 mr-1.5" />
               Join a Class
@@ -197,24 +197,24 @@ export default function MyClassesPage() {
             return (
               <Card
                 key={cls.membership_id}
-                className="flex flex-col justify-between hover:shadow-md transition-shadow border-neutral-200/80 dark:border-neutral-800"
+                className="rounded-lg border border-border shadow-sm flex flex-col justify-between"
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base font-semibold line-clamp-1 leading-snug">
+                    <CardTitle className="text-base font-semibold text-foreground line-clamp-1 leading-snug">
                       {cls.class_name}
                     </CardTitle>
 
                     {/* Status Badges */}
                     {cls.status === 'approved' && (
-                      <Badge className="bg-emerald-600 text-white font-medium text-xs">
+                      <Badge className="bg-emerald-600 text-white font-medium text-xs rounded">
                         Approved
                       </Badge>
                     )}
                     {cls.status === 'pending' && (
                       <Badge
                         variant="outline"
-                        className="border-amber-400 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 text-xs font-medium"
+                        className="border-amber-400 text-amber-700 dark:text-amber-400 bg-amber-500/10 text-xs font-medium rounded"
                       >
                         Pending
                       </Badge>
@@ -222,52 +222,52 @@ export default function MyClassesPage() {
                     {cls.status === 'rejected' && (
                       <Badge
                         variant="outline"
-                        className="border-red-400 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 text-xs font-medium"
+                        className="border-destructive/40 text-destructive bg-destructive/10 text-xs font-medium rounded"
                       >
-                        Rejected
+                        Declined
                       </Badge>
                     )}
                     {cls.status === 'removed' && (
                       <Badge
                         variant="outline"
-                        className="border-neutral-300 text-neutral-500 bg-neutral-100 dark:bg-neutral-800 text-xs font-medium"
+                        className="border-border text-muted-foreground bg-secondary text-xs font-medium rounded"
                       >
                         Removed
                       </Badge>
                     )}
                   </div>
 
-                  <CardDescription className="text-xs pt-1 flex items-center gap-1.5 text-neutral-500">
+                  <CardDescription className="text-xs pt-1 flex items-center gap-1.5 text-muted-foreground">
                     <UserCheck className="w-3.5 h-3.5" />
-                    Instructor: <span className="font-medium text-neutral-700 dark:text-neutral-300">{cls.teacher_name}</span>
+                    Teacher: <span className="font-medium text-foreground">{cls.teacher_name}</span>
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="space-y-3 py-2 text-xs text-neutral-600 dark:text-neutral-400">
+                <CardContent className="space-y-3 py-2 text-xs text-muted-foreground">
                   {/* Status-specific descriptions */}
                   {cls.status === 'pending' && (
-                    <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/40 text-amber-900 dark:text-amber-200 flex items-center gap-2 text-xs">
+                    <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-800 dark:text-amber-300 flex items-center gap-2 text-xs">
                       <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                       <span>Waiting for teacher approval</span>
                     </div>
                   )}
 
                   {cls.status === 'rejected' && (
-                    <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200/70 dark:border-red-900/40 text-red-900 dark:text-red-200 flex items-center gap-2 text-xs">
-                      <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
-                      <span>Request was declined by teacher</span>
+                    <div className="p-2.5 rounded-lg bg-destructive/10 text-destructive flex items-center gap-2 text-xs">
+                      <XCircle className="w-4 h-4 shrink-0" />
+                      <span>Join request was declined</span>
                     </div>
                   )}
 
                   {cls.status === 'removed' && (
-                    <div className="p-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 flex items-center gap-2 text-xs">
-                      <AlertCircle className="w-4 h-4 text-neutral-500 shrink-0" />
-                      <span>Membership was removed</span>
+                    <div className="p-2.5 rounded-lg bg-secondary text-muted-foreground flex items-center gap-2 text-xs">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>Membership removed</span>
                     </div>
                   )}
 
                   {cls.status === 'approved' && (
-                    <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-900/40 text-emerald-900 dark:text-emerald-200 flex items-center justify-between text-xs">
+                    <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
                         <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                         <span className="font-medium">
@@ -279,7 +279,7 @@ export default function MyClassesPage() {
                       {availableExamsCount > 0 && (
                         <Link
                           href="/exams"
-                          className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 hover:underline inline-flex items-center"
+                          className="text-xs font-medium text-emerald-700 dark:text-emerald-300 hover:underline inline-flex items-center"
                         >
                           View <ArrowRight className="w-3 h-3 ml-0.5" />
                         </Link>
@@ -287,22 +287,22 @@ export default function MyClassesPage() {
                     </div>
                   )}
 
-                  <div className="text-[11px] text-neutral-400 pt-1 flex items-center gap-1.5">
+                  <div className="text-xs text-muted-foreground pt-1 flex items-center gap-1.5">
                     <Calendar className="w-3 h-3" />
-                    <span>Requested on {new Date(cls.requested_at).toLocaleDateString()}</span>
+                    <span>Requested {new Date(cls.requested_at).toLocaleDateString()}</span>
                   </div>
                 </CardContent>
 
-                <CardFooter className="pt-3 border-t border-neutral-100 dark:border-neutral-800/60">
+                <CardFooter className="pt-3 border-t border-border">
                   {cls.status === 'approved' ? (
                     <Link
                       href="/exams"
                       className={cn(
                         buttonVariants({ variant: 'outline', size: 'sm' }),
-                        'w-full text-xs text-neutral-700 dark:text-neutral-200'
+                        'w-full text-xs rounded-lg h-9'
                       )}
                     >
-                      <BookOpen className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
+                      <BookOpen className="w-3.5 h-3.5 mr-1.5 text-primary" />
                       View Exams
                     </Link>
                   ) : cls.status === 'removed' ? (
@@ -310,15 +310,15 @@ export default function MyClassesPage() {
                       href="/join"
                       className={cn(
                         buttonVariants({ variant: 'outline', size: 'sm' }),
-                        'w-full text-xs text-neutral-700 dark:text-neutral-200'
+                        'w-full text-xs rounded-lg h-9'
                       )}
                     >
                       <PlusCircle className="w-3.5 h-3.5 mr-1.5" />
                       Re-request with Code
                     </Link>
                   ) : (
-                    <div className="w-full text-center py-1 text-xs text-neutral-400 italic">
-                      {cls.status === 'pending' ? 'Pending instructor review' : 'Access closed'}
+                    <div className="w-full text-center py-1 text-xs text-muted-foreground">
+                      {cls.status === 'pending' ? 'Pending approval' : 'Access closed'}
                     </div>
                   )}
                 </CardFooter>

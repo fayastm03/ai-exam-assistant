@@ -366,27 +366,27 @@ export default function TeacherExamDetailPage({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Top Breadcrumb & Action Bar */}
-      <div className="flex flex-col gap-4 border-b border-neutral-200/80 dark:border-neutral-800 pb-5">
+      <div className="flex flex-col gap-4 border-b border-border pb-5">
         <div className="flex items-center justify-between">
           <Link
             href="/teacher/exams"
             className={cn(
               buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'text-neutral-500 hover:text-neutral-900 -ml-2 h-8 text-xs'
+              'text-muted-foreground hover:text-foreground -ml-2 h-8 text-xs'
             )}
           >
             <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-            Back to All Exams
+            Back to Exams
           </Link>
 
           <div className="flex items-center gap-2">
             <Link
               href={`/teacher/exams/${exam.id}/results`}
-              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-xs h-8')}
+              className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-xs h-9 rounded-lg')}
             >
-              <BarChart3 className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
+              <BarChart3 className="w-3.5 h-3.5 mr-1.5 text-primary" />
               Class Results
             </Link>
 
@@ -403,21 +403,21 @@ export default function TeacherExamDetailPage({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="space-y-1">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
                 {exam.title}
               </h1>
               {renderStatusBadge(exam.status)}
             </div>
             {exam.instructions && (
-              <p className="text-xs text-neutral-500 line-clamp-2 max-w-2xl">{exam.instructions}</p>
+              <p className="text-xs text-muted-foreground line-clamp-2 max-w-2xl">{exam.instructions}</p>
             )}
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto text-xs font-medium text-neutral-500 bg-neutral-100 dark:bg-neutral-800/60 px-3 py-1.5 rounded-lg">
-            <Clock className="w-3.5 h-3.5 text-amber-500" />
+          <div className="flex items-center gap-2 self-start sm:self-auto text-xs font-medium text-muted-foreground bg-secondary px-3 py-1.5 rounded-lg border border-border">
+            <Clock className="w-3.5 h-3.5" />
             <span>{exam.duration_min} mins</span>
             <span>•</span>
-            <span>{questions.length} Questions</span>
+            <span>{questions.length} {questions.length === 1 ? 'question' : 'questions'}</span>
           </div>
         </div>
       </div>
@@ -587,31 +587,31 @@ export default function TeacherExamDetailPage({
                 return (
                   <Card
                     key={q.id}
-                    className={`border transition-colors ${
+                    className={`rounded-lg border transition-colors shadow-sm ${
                       isFlagged
-                        ? 'border-amber-400 dark:border-amber-600 bg-amber-50/10'
-                        : 'border-neutral-200/80 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700'
+                        ? 'border-amber-400 bg-amber-500/5'
+                        : 'border-border bg-card'
                     }`}
                   >
                     <CardHeader className="py-3 px-4 pb-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-xs bg-neutral-100 dark:bg-neutral-800 px-2.5 py-0.5 rounded text-neutral-800 dark:text-neutral-200">
-                            #{q.number}
+                          <span className="font-semibold text-xs bg-secondary px-2.5 py-0.5 rounded text-foreground">
+                            Question {q.number}
                           </span>
                           {q.topic && (
-                            <Badge variant="secondary" className="text-[10px] py-0">
+                            <Badge variant="outline" className="text-xs font-normal">
                               {q.topic}
                             </Badge>
                           )}
-                          <Badge variant="outline" className="text-[10px] py-0 font-medium">
-                            {q.marks} {q.marks === 1 ? 'Mark' : 'Marks'}
-                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {q.marks} {q.marks === 1 ? 'mark' : 'marks'}
+                          </span>
 
                           {q.source === 'generated' && (
                             <Badge
                               variant="outline"
-                              className="text-[10px] py-0 text-purple-700 border-purple-300 bg-purple-50 dark:bg-purple-950/20 font-medium"
+                              className="text-xs py-0 text-primary border-border bg-secondary font-normal rounded"
                             >
                               Generated
                             </Badge>
@@ -620,7 +620,7 @@ export default function TeacherExamDetailPage({
                           {q.source === 'imported' && (
                             <Badge
                               variant="outline"
-                              className="text-[10px] py-0 text-blue-600 border-blue-200"
+                              className="text-xs py-0 text-muted-foreground border-border rounded"
                             >
                               Imported
                             </Badge>
@@ -629,14 +629,14 @@ export default function TeacherExamDetailPage({
                           {q.review_status === 'draft' ? (
                             <Badge
                               variant="outline"
-                              className="text-[10px] py-0 text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-950/20"
+                              className="text-xs py-0 text-amber-700 dark:text-amber-400 border-amber-400 bg-amber-500/10 rounded font-normal"
                             >
                               Draft
                             </Badge>
                           ) : (
                             <Badge
                               variant="outline"
-                              className="text-[10px] py-0 text-emerald-700 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20"
+                              className="text-xs py-0 text-emerald-700 dark:text-emerald-400 border-emerald-400 bg-emerald-500/10 rounded font-normal"
                             >
                               Approved
                             </Badge>
@@ -645,22 +645,23 @@ export default function TeacherExamDetailPage({
                           {isFlagged && (
                             <Badge
                               variant="outline"
-                              className="text-[10px] py-0 text-amber-800 border-amber-400 bg-amber-100 dark:bg-amber-950 font-bold"
+                              className="text-xs py-0 text-amber-800 dark:text-amber-300 border-amber-400 bg-amber-500/10 rounded flex items-center gap-1 font-medium"
                             >
-                              ⚠️ AI Flagged
+                              <AlertTriangle className="w-3 h-3 text-amber-600" />
+                              Flagged
                             </Badge>
                           )}
 
                           {(!q.correct_option || q.correct_option === 'UNSET') && (
-                            <Badge variant="destructive" className="text-[10px] py-0 font-medium">
-                              No Correct Option
+                            <Badge variant="destructive" className="text-xs py-0 font-normal rounded">
+                              No correct option
                             </Badge>
                           )}
 
                           {q.text.includes('[unclear]') && (
                             <Badge
                               variant="outline"
-                              className="text-[10px] py-0 bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950"
+                              className="text-xs py-0 bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-400 rounded"
                             >
                               Contains [unclear]
                             </Badge>

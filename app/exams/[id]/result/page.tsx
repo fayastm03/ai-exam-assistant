@@ -281,94 +281,94 @@ export default function StudentExamResultPage({
       </div>
 
       {/* Main Score Overview Card */}
-      <Card className="border-neutral-200/80 dark:border-neutral-800 shadow-sm overflow-hidden bg-gradient-to-br from-white via-white to-blue-50/30 dark:from-neutral-900 dark:via-neutral-900 dark:to-blue-950/20">
+      <Card className="rounded-lg border border-border shadow-sm">
         <CardContent className="p-6 sm:p-8">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
             {/* Primary Score Dial */}
-            <div className="md:col-span-5 flex flex-col items-center md:items-start text-center md:text-left border-b md:border-b-0 md:border-r border-neutral-200 dark:border-neutral-800 pb-6 md:pb-0 md:pr-8">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">
-                <Award className="w-4 h-4 text-blue-600" />
-                Final Examination Score
+            <div className="md:col-span-5 flex flex-col items-start border-b md:border-b-0 md:border-r border-border pb-6 md:pb-0 md:pr-8">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                <Award className="w-4 h-4 text-primary" />
+                Exam Result
               </div>
 
               <div className="flex items-baseline gap-2">
-                <span className="text-5xl sm:text-6xl font-black tracking-tight text-neutral-900 dark:text-neutral-50">
+                <span className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground">
                   {score.totalScore}
                 </span>
-                <span className="text-xl sm:text-2xl font-medium text-neutral-400">
+                <span className="text-xl font-normal text-muted-foreground">
                   / {score.maxPossibleScore}
                 </span>
               </div>
 
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-3 flex items-center gap-2.5">
                 <Badge
                   className={cn(
-                    'text-xs font-semibold px-2.5 py-0.5',
+                    'text-xs font-semibold px-2.5 py-0.5 rounded',
                     score.percentage >= 75
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      ? 'bg-emerald-600 text-white'
                       : score.percentage >= 50
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                        : 'bg-red-600 hover:bg-red-700 text-white'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-destructive text-destructive-foreground'
                   )}
                 >
-                  {score.percentage}% Overall
+                  {score.percentage}%
                 </Badge>
-                <span className="text-xs text-neutral-500">
-                  {score.percentage >= 50 ? 'Passed Examination' : 'Needs Review'}
+                <span className="text-xs text-muted-foreground">
+                  {score.percentage >= 50 ? 'Passed' : 'Needs review'}
                 </span>
               </div>
             </div>
 
             {/* Performance Breakdown Tiles */}
             <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 text-center">
-                <div className="flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-1">
-                  <CheckCircle2 className="w-4 h-4 mr-1" />
-                  <span className="text-xs font-semibold">Correct</span>
+              <div className="p-3.5 rounded-lg bg-secondary text-left">
+                <div className="flex items-center text-emerald-600 dark:text-emerald-400 mb-1 gap-1">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span className="text-xs font-medium">Correct</span>
                 </div>
-                <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+                <div className="text-2xl font-bold text-foreground">
                   {score.correctCount}
                 </div>
-                <div className="text-[11px] text-emerald-600/80">
-                  of {score.totalQuestions} questions
+                <div className="text-xs text-muted-foreground">
+                  of {score.totalQuestions}
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-red-50/70 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/40 text-center">
-                <div className="flex items-center justify-center text-red-600 dark:text-red-400 mb-1">
-                  <XCircle className="w-4 h-4 mr-1" />
-                  <span className="text-xs font-semibold">Wrong</span>
+              <div className="p-3.5 rounded-lg bg-secondary text-left">
+                <div className="flex items-center text-destructive mb-1 gap-1">
+                  <XCircle className="w-4 h-4" />
+                  <span className="text-xs font-medium">Wrong</span>
                 </div>
-                <div className="text-2xl font-bold text-red-700 dark:text-red-300">
+                <div className="text-2xl font-bold text-foreground">
                   {score.wrongCount}
                 </div>
-                <div className="text-[11px] text-red-600/80">
+                <div className="text-xs text-muted-foreground">
                   {exam.negative_marking > 0
-                    ? `-${Math.round(exam.negative_marking * 100)}% marks`
+                    ? `-${Math.round(exam.negative_marking * 100)}%`
                     : '0 deduction'}
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-neutral-100/80 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 text-center">
-                <div className="flex items-center justify-center text-neutral-600 dark:text-neutral-400 mb-1">
-                  <MinusCircle className="w-4 h-4 mr-1" />
-                  <span className="text-xs font-semibold">Skipped</span>
+              <div className="p-3.5 rounded-lg bg-secondary text-left">
+                <div className="flex items-center text-muted-foreground mb-1 gap-1">
+                  <MinusCircle className="w-4 h-4" />
+                  <span className="text-xs font-medium">Skipped</span>
                 </div>
-                <div className="text-2xl font-bold text-neutral-700 dark:text-neutral-300">
+                <div className="text-2xl font-bold text-foreground">
                   {score.skippedCount}
                 </div>
-                <div className="text-[11px] text-neutral-500">0 penalty</div>
+                <div className="text-xs text-muted-foreground">0 penalty</div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/40 text-center">
-                <div className="flex items-center justify-center text-blue-600 dark:text-blue-400 mb-1">
-                  <Clock className="w-4 h-4 mr-1" />
-                  <span className="text-xs font-semibold">Time</span>
+              <div className="p-3.5 rounded-lg bg-secondary text-left">
+                <div className="flex items-center text-primary mb-1 gap-1">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-xs font-medium">Time</span>
                 </div>
-                <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                <div className="text-2xl font-bold text-foreground">
                   {formatDuration(attempt.time_taken_seconds)}
                 </div>
-                <div className="text-[11px] text-blue-600/80">
+                <div className="text-xs text-muted-foreground">
                   limit: {exam.duration_min}m
                 </div>
               </div>
@@ -380,43 +380,43 @@ export default function StudentExamResultPage({
       {/* Topics Breakdown & Weak Topics Alert */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Per-Topic Breakdown */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-7 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-50 flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-blue-600" />
-              Per-Topic Mastery
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-primary" />
+              Topic Performance
             </h2>
-            <span className="text-xs text-neutral-500">
-              {Object.keys(topics).length} {Object.keys(topics).length === 1 ? 'Topic' : 'Topics'}
+            <span className="text-xs text-muted-foreground">
+              {Object.keys(topics).length} {Object.keys(topics).length === 1 ? 'topic' : 'topics'}
             </span>
           </div>
 
-          <Card className="border-neutral-200/80 dark:border-neutral-800">
+          <Card className="rounded-lg border border-border shadow-sm">
             <CardContent className="p-4 sm:p-5 space-y-4">
               {Object.keys(topics).length === 0 ? (
-                <p className="text-xs text-neutral-500 text-center py-4">
+                <p className="text-xs text-muted-foreground text-center py-4">
                   No topic breakdown available for this exam.
                 </p>
               ) : (
                 Object.values(topics).map((t) => (
                   <div key={t.topic} className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                      <span className="font-medium text-foreground">
                         {t.topic}
                       </span>
                       <div className="flex items-center gap-2">
-                        <span className="text-neutral-500 text-[11px]">
+                        <span className="text-muted-foreground text-xs">
                           {t.earnedMarks} / {t.totalMarks} marks
                         </span>
                         <Badge
                           variant="outline"
                           className={cn(
-                            'text-[11px] font-bold py-0 h-5',
+                            'text-xs font-semibold py-0 h-5',
                             t.percentage >= 75
                               ? 'border-emerald-300 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/20'
                               : t.percentage >= 50
-                                ? 'border-blue-300 text-blue-700 bg-blue-50 dark:bg-blue-950/20'
-                                : 'border-red-300 text-red-700 bg-red-50 dark:bg-red-950/20'
+                                ? 'border-primary/40 text-primary'
+                                : 'border-destructive/40 text-destructive'
                           )}
                         >
                           {t.percentage}%
@@ -425,15 +425,15 @@ export default function StudentExamResultPage({
                     </div>
 
                     {/* Progress bar */}
-                    <div className="w-full bg-neutral-100 dark:bg-neutral-800 h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
                       <div
                         className={cn(
-                          'h-full rounded-full transition-all duration-500',
+                          'h-full rounded-full transition-all duration-300',
                           t.percentage >= 75
-                            ? 'bg-emerald-500'
+                            ? 'bg-emerald-600'
                             : t.percentage >= 50
-                              ? 'bg-blue-500'
-                              : 'bg-red-500'
+                              ? 'bg-primary'
+                              : 'bg-destructive'
                         )}
                         style={{ width: `${Math.max(0, Math.min(100, t.percentage))}%` }}
                       />
@@ -446,30 +446,30 @@ export default function StudentExamResultPage({
         </div>
 
         {/* Right Column: Weak Topics List */}
-        <div className="lg:col-span-5 space-y-4">
+        <div className="lg:col-span-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-50 flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-500" />
-              Focus Areas (&lt; 50%)
+              Focus Areas (under 50%)
             </h2>
             <Badge variant="outline" className="text-xs">
-              {weakTopics.length} {weakTopics.length === 1 ? 'Topic' : 'Topics'}
+              {weakTopics.length} {weakTopics.length === 1 ? 'topic' : 'topics'}
             </Badge>
           </div>
 
           <Card
             className={cn(
-              'border shadow-sm h-full flex flex-col justify-between',
+              'rounded-lg border shadow-sm h-full flex flex-col justify-between',
               weakTopics.length > 0
-                ? 'border-red-200 dark:border-red-900/50 bg-red-50/20 dark:bg-red-950/10'
-                : 'border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/20 dark:bg-emerald-950/10'
+                ? 'border-border bg-card'
+                : 'border-border bg-card'
             )}
           >
             <CardContent className="p-4 sm:p-5 space-y-3">
               {weakTopics.length > 0 ? (
                 <>
-                  <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                    You scored below 50% in the following areas. Spend extra time reviewing these concepts:
+                  <p className="text-xs text-muted-foreground">
+                    You scored below 50% in these topics. Consider reviewing these concepts:
                   </p>
                   <ul className="space-y-2">
                     {weakTopics.map((topicName) => {
@@ -477,16 +477,16 @@ export default function StudentExamResultPage({
                       return (
                         <li
                           key={topicName}
-                          className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-neutral-900 border border-red-200/80 dark:border-red-900/60 text-xs"
+                          className="flex items-center justify-between p-2.5 rounded-lg bg-secondary text-xs"
                         >
                           <div className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                            <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                            <span className="font-medium text-foreground">
                               {topicName}
                             </span>
                           </div>
                           {topicData && (
-                            <Badge variant="destructive" className="text-[10px] py-0 h-4">
+                            <Badge variant="destructive" className="text-xs py-0 h-5">
                               {topicData.percentage}%
                             </Badge>
                           )}
@@ -497,14 +497,14 @@ export default function StudentExamResultPage({
                 </>
               ) : (
                 <div className="py-6 text-center space-y-2">
-                  <div className="mx-auto w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+                  <div className="mx-auto w-10 h-10 rounded-full bg-secondary text-emerald-600 flex items-center justify-center">
                     <Sparkles className="w-5 h-5" />
                   </div>
-                  <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                    No Weak Topics Detected!
+                  <h3 className="text-sm font-semibold text-foreground">
+                    No weak topics detected
                   </h3>
-                  <p className="text-xs text-neutral-500 max-w-xs mx-auto">
-                    You scored 50% or higher across all tested topics in this exam. Great work!
+                  <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                    You scored 50% or higher across all topics in this exam.
                   </p>
                 </div>
               )}
@@ -515,34 +515,34 @@ export default function StudentExamResultPage({
 
       {/* Automated AI Feedback Card */}
       {(aiFeedbackLoading || aiFeedback) && (
-        <Card className="border-purple-200/80 dark:border-purple-900/60 bg-purple-50/40 dark:bg-purple-950/20 shadow-xs">
+        <Card className="rounded-lg border border-border bg-secondary/30 shadow-sm">
           <CardHeader className="p-4 sm:p-5 pb-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-              <div className="flex items-center gap-2 text-purple-900 dark:text-purple-300 font-bold text-sm">
-                <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
-                <span>AI feedback</span>
+              <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
+                <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                <span>AI Feedback</span>
                 {aiFeedbackSource === 'auto_template' && (
                   <Badge
                     variant="outline"
-                    className="border-neutral-300 text-neutral-600 dark:text-neutral-400 text-[10px] py-0 font-normal ml-1"
+                    className="text-xs py-0 font-normal ml-1"
                   >
-                    Template Summary
+                    Template
                   </Badge>
                 )}
               </div>
-              <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                Written by AI from your results. Marks are calculated by the system.
+              <span className="text-xs text-muted-foreground">
+                Generated from your exam results.
               </span>
             </div>
           </CardHeader>
           <CardContent className="p-4 sm:p-5 pt-1">
             {aiFeedbackLoading ? (
-              <div className="flex items-center gap-2 py-3 text-xs text-purple-700 dark:text-purple-300">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-600 shrink-0" />
-                <span>Generating personalized AI feedback from your performance...</span>
+              <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+                <span>Preparing feedback from your performance...</span>
               </div>
             ) : (
-              <p className="text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap leading-relaxed">
+              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
                 {aiFeedback}
               </p>
             )}
@@ -550,23 +550,17 @@ export default function StudentExamResultPage({
         </Card>
       )}
 
-      {/* Teacher Released Feedback Card (Hidden if no released feedback) */}
+      {/* Teacher Released Feedback Card */}
       {data.feedback?.overall && (
-        <Card className="border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 shadow-xs">
+        <Card className="rounded-lg border border-border bg-secondary/30 shadow-sm">
           <CardHeader className="p-4 sm:p-5 pb-2">
-            <div className="flex items-center gap-2 text-blue-900 dark:text-blue-300 font-bold text-sm">
-              <MessageSquare className="w-4 h-4 text-blue-600" />
+            <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
+              <MessageSquare className="w-4 h-4 text-primary" />
               <span>Teacher Feedback</span>
-              <Badge
-                variant="outline"
-                className="border-blue-300 text-blue-700 bg-blue-50 dark:bg-blue-950/40 text-[10px] py-0 font-medium ml-1"
-              >
-                Personalized Review
-              </Badge>
             </div>
           </CardHeader>
           <CardContent className="p-4 sm:p-5 pt-1">
-            <p className="text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap leading-relaxed">
+            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
               {data.feedback.overall}
             </p>
           </CardContent>
@@ -575,25 +569,25 @@ export default function StudentExamResultPage({
 
       {/* Question-by-Question Review */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200/80 dark:border-neutral-800 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
           <div>
-            <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-50">
-              Question-by-Question Review
+            <h2 className="text-lg font-semibold text-foreground">
+              Question Review
             </h2>
-            <p className="text-xs text-neutral-500">
-              Inspect your answers against the correct options and official explanations.
+            <p className="text-xs text-muted-foreground">
+              Review your answers, correct solutions, and explanations.
             </p>
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-neutral-800 p-1 rounded-lg self-start sm:self-auto text-xs">
+          <div className="flex items-center gap-1 bg-secondary p-1 rounded-lg self-start sm:self-auto text-xs">
             <button
               onClick={() => setFilter('all')}
               className={cn(
-                'px-2.5 py-1 rounded-md font-medium transition-colors',
+                'px-3 py-1.5 rounded-md font-medium transition-colors',
                 filter === 'all'
-                  ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-50 shadow-xs'
-                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900'
+                  ? 'bg-card text-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
             >
               All ({questions.length})
@@ -601,10 +595,10 @@ export default function StudentExamResultPage({
             <button
               onClick={() => setFilter('correct')}
               className={cn(
-                'px-2.5 py-1 rounded-md font-medium transition-colors',
+                'px-3 py-1.5 rounded-md font-medium transition-colors',
                 filter === 'correct'
-                  ? 'bg-white dark:bg-neutral-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
-                  : 'text-neutral-600 dark:text-neutral-400 hover:text-emerald-600'
+                  ? 'bg-card text-emerald-600 dark:text-emerald-400 shadow-xs'
+                  : 'text-muted-foreground hover:text-emerald-600'
               )}
             >
               Correct ({score.correctCount})
@@ -612,10 +606,10 @@ export default function StudentExamResultPage({
             <button
               onClick={() => setFilter('wrong')}
               className={cn(
-                'px-2.5 py-1 rounded-md font-medium transition-colors',
+                'px-3 py-1.5 rounded-md font-medium transition-colors',
                 filter === 'wrong'
-                  ? 'bg-white dark:bg-neutral-900 text-red-600 dark:text-red-400 shadow-xs'
-                  : 'text-neutral-600 dark:text-neutral-400 hover:text-red-600'
+                  ? 'bg-card text-destructive shadow-xs'
+                  : 'text-muted-foreground hover:text-destructive'
               )}
             >
               Wrong ({score.wrongCount})
@@ -623,10 +617,10 @@ export default function StudentExamResultPage({
             <button
               onClick={() => setFilter('skipped')}
               className={cn(
-                'px-2.5 py-1 rounded-md font-medium transition-colors',
+                'px-3 py-1.5 rounded-md font-medium transition-colors',
                 filter === 'skipped'
-                  ? 'bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 shadow-xs'
-                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900'
+                  ? 'bg-card text-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
             >
               Skipped ({score.skippedCount})
@@ -657,50 +651,43 @@ export default function StudentExamResultPage({
               return (
                 <Card
                   key={q.id}
-                  className={cn(
-                    'border transition-colors overflow-hidden',
-                    isCorrect
-                      ? 'border-emerald-200 dark:border-emerald-900/60'
-                      : isWrong
-                        ? 'border-red-200 dark:border-red-900/60'
-                        : 'border-neutral-200/80 dark:border-neutral-800'
-                  )}
+                  className="rounded-lg border border-border shadow-sm overflow-hidden"
                 >
-                  <CardHeader className="p-4 sm:p-5 pb-3 bg-neutral-50/50 dark:bg-neutral-900/40 border-b border-neutral-100 dark:border-neutral-800">
+                  <CardHeader className="p-4 sm:p-5 pb-3 bg-secondary/40 border-b border-border">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100">
+                        <span className="font-semibold text-sm text-foreground">
                           Question {q.number}
                         </span>
 
                         {q.topic && (
-                          <Badge variant="outline" className="text-[11px] py-0 text-neutral-600">
+                          <Badge variant="outline" className="text-xs font-normal">
                             {q.topic}
                           </Badge>
                         )}
 
-                        <span className="text-xs text-neutral-400">•</span>
-                        <span className="text-xs font-medium text-neutral-500">
-                          {q.marks} {q.marks === 1 ? 'Mark' : 'Marks'}
+                        <span className="text-xs text-muted-foreground">•</span>
+                        <span className="text-xs text-muted-foreground">
+                          {q.marks} {q.marks === 1 ? 'mark' : 'marks'}
                         </span>
                       </div>
 
                       {/* Question Status Pill */}
                       <div>
                         {isCorrect && (
-                          <Badge className="bg-emerald-600 text-white font-medium text-xs flex items-center gap-1">
+                          <Badge className="bg-emerald-600 text-white font-medium text-xs flex items-center gap-1 rounded">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             Correct (+{q.score_earned})
                           </Badge>
                         )}
                         {isWrong && (
-                          <Badge variant="destructive" className="font-medium text-xs flex items-center gap-1">
+                          <Badge variant="destructive" className="font-medium text-xs flex items-center gap-1 rounded">
                             <XCircle className="w-3.5 h-3.5" />
                             Incorrect ({q.score_earned})
                           </Badge>
                         )}
                         {isSkipped && (
-                          <Badge variant="secondary" className="font-medium text-xs flex items-center gap-1">
+                          <Badge variant="secondary" className="font-medium text-xs flex items-center gap-1 rounded">
                             <MinusCircle className="w-3.5 h-3.5" />
                             Skipped (0)
                           </Badge>
@@ -708,7 +695,7 @@ export default function StudentExamResultPage({
                       </div>
                     </div>
 
-                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 pt-2 whitespace-pre-wrap leading-relaxed">
+                    <p className="text-base font-medium text-foreground pt-2 whitespace-pre-wrap leading-relaxed">
                       {q.text}
                     </p>
                   </CardHeader>

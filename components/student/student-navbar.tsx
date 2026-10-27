@@ -29,30 +29,23 @@ export function StudentNavbar({ userName }: StudentNavbarProps) {
   const isJoinActive = pathname.startsWith('/join');
 
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-200/80 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link href="/exams" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-sm shadow-blue-500/20">
-              <GraduationCap className="w-5 h-5" />
+          <Link href="/exams" className="flex items-center gap-2 text-foreground font-bold text-sm sm:text-base">
+            <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
+              <GraduationCap className="w-4 h-4" />
             </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-base tracking-tight leading-tight">
-                AI Exam Assistant
-              </span>
-              <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-medium">
-                Student Portal
-              </span>
-            </div>
+            <span>AI Exam Assistant</span>
           </Link>
 
           <nav className="hidden sm:flex items-center gap-1">
             <Link
               href="/exams"
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
                 isExamsActive
-                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
-                  : 'text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                  ? 'bg-secondary text-primary font-semibold'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
               <BookOpen className="w-4 h-4" />
@@ -60,37 +53,35 @@ export function StudentNavbar({ userName }: StudentNavbarProps) {
             </Link>
             <Link
               href="/classes"
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
                 isClassesActive
-                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
-                  : 'text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                  ? 'bg-secondary text-primary font-semibold'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
               <Users className="w-4 h-4" />
-              My classes
+              My Classes
             </Link>
             <Link
               href="/join"
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
                 isJoinActive
-                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
-                  : 'text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                  ? 'bg-secondary text-primary font-semibold'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
               <PlusCircle className="w-4 h-4" />
-              Join a class
+              Join Class
             </Link>
           </nav>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden sm:flex flex-col items-end">
-            <span className="text-xs font-semibold text-neutral-900 dark:text-neutral-100">
-              {userName}
-            </span>
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="text-xs font-medium text-foreground">{userName}</span>
             <Badge
               variant="outline"
-              className="text-[10px] py-0 px-1.5 h-4 text-emerald-600 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50"
+              className="text-[10px] py-0 px-1.5 h-5 text-muted-foreground border-border rounded-lg"
             >
               Student
             </Badge>
@@ -100,50 +91,12 @@ export function StudentNavbar({ userName }: StudentNavbarProps) {
             variant="ghost"
             size="sm"
             onClick={handleSignOut}
-            className="text-neutral-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
-            title="Sign Out"
+            className="text-xs text-muted-foreground hover:text-foreground h-8 px-2.5 rounded-lg cursor-pointer"
           >
-            <LogOut className="w-4 h-4 sm:mr-1.5" />
-            <span className="hidden sm:inline">Sign Out</span>
+            <LogOut className="w-3.5 h-3.5 mr-1.5" />
+            Sign Out
           </Button>
         </div>
-      </div>
-
-      {/* Mobile navigation row */}
-      <div className="sm:hidden flex items-center border-t border-neutral-200 dark:border-neutral-800 px-4 py-2 gap-2 bg-neutral-50/50 dark:bg-neutral-900/50">
-        <Link
-          href="/exams"
-          className={`flex-1 text-center py-1.5 text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1 ${
-            isExamsActive
-              ? 'bg-white dark:bg-neutral-800 text-blue-600 dark:text-blue-400 shadow-sm'
-              : 'text-neutral-600 dark:text-neutral-400'
-          }`}
-        >
-          <BookOpen className="w-3.5 h-3.5" />
-          Exams
-        </Link>
-        <Link
-          href="/classes"
-          className={`flex-1 text-center py-1.5 text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1 ${
-            isClassesActive
-              ? 'bg-white dark:bg-neutral-800 text-blue-600 dark:text-blue-400 shadow-sm'
-              : 'text-neutral-600 dark:text-neutral-400'
-          }`}
-        >
-          <Users className="w-3.5 h-3.5" />
-          My classes
-        </Link>
-        <Link
-          href="/join"
-          className={`flex-1 text-center py-1.5 text-xs font-medium rounded-md transition-colors flex items-center justify-center gap-1 ${
-            isJoinActive
-              ? 'bg-white dark:bg-neutral-800 text-blue-600 dark:text-blue-400 shadow-sm'
-              : 'text-neutral-600 dark:text-neutral-400'
-          }`}
-        >
-          <PlusCircle className="w-3.5 h-3.5" />
-          Join
-        </Link>
       </div>
     </header>
   );

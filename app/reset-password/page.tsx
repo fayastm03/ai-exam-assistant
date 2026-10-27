@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,9 +66,9 @@ export default function ResetPasswordPage() {
     }
 
     if (!confirmPassword) {
-      errors.confirmPassword = 'Please confirm your new password.';
+      errors.confirmPassword = 'Confirm your new password.';
     } else if (password !== confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match. Check both fields and try again.';
+      errors.confirmPassword = 'Passwords do not match.';
     }
 
     setFieldErrors(errors);
@@ -111,7 +111,6 @@ export default function ResetPasswordPage() {
         });
         setLoading(false);
 
-        // Sign out to enforce clean login with the new credentials
         await supabase.auth.signOut();
 
         setTimeout(() => {
@@ -125,31 +124,23 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-neutral-50 dark:bg-neutral-950">
-      <div className="w-full max-w-md px-4">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600 text-white mb-3 shadow-md shadow-blue-500/20">
-            <GraduationCap className="w-7 h-7" />
+    <main className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-background">
+      <div className="w-full max-w-sm mx-auto space-y-6">
+        <div className="text-left space-y-1">
+          <div className="flex items-center gap-2 mb-2 text-primary font-bold text-lg">
+            <GraduationCap className="w-6 h-6" />
+            <span>AI Exam Assistant</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50">
-            AI Exam Assistant
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Reset Password
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Create New Password
+          <p className="text-sm text-muted-foreground">
+            Enter your new password below.
           </p>
         </div>
 
-        <Card className="shadow-lg border-neutral-200/80 dark:border-neutral-800">
-          <CardHeader className="pb-4">
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-              Reset Password
-            </h2>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Enter your new account password below
-            </p>
-          </CardHeader>
-
-          <CardContent className="space-y-4 pt-0">
+        <Card className="rounded-lg border border-border shadow-sm bg-card">
+          <CardContent className="p-6 space-y-4">
             {pageMessage && (
               <AppMessage
                 message={pageMessage}
@@ -159,9 +150,9 @@ export default function ResetPasswordPage() {
             )}
 
             {checkingSession ? (
-              <div className="flex flex-col items-center justify-center py-8 space-y-2">
-                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                <p className="text-xs text-neutral-500">Verifying security token...</p>
+              <div className="flex flex-col items-center justify-center py-6 space-y-2 text-muted-foreground text-sm">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <p>Verifying link...</p>
               </div>
             ) : !hasSession && !pageMessage ? (
               <AppMessage
@@ -172,12 +163,12 @@ export default function ResetPasswordPage() {
             ) : hasSession ? (
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                 <div className="space-y-1.5">
-                  <Label htmlFor="new-password">New Password</Label>
+                  <Label htmlFor="new-password" className="text-sm font-medium">New Password</Label>
                   <Input
                     ref={passwordInputRef}
                     id="new-password"
                     type="password"
-                    placeholder="At least 8 characters with letters & numbers"
+                    placeholder="At least 8 letters & numbers"
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
@@ -188,26 +179,29 @@ export default function ResetPasswordPage() {
                     autoComplete="new-password"
                     disabled={loading}
                     aria-invalid={!!fieldErrors.password}
-                    className={cn(fieldErrors.password && 'border-red-500 focus-visible:ring-red-400')}
+                    className={cn(
+                      'h-10 text-base rounded-lg',
+                      fieldErrors.password && 'border-destructive focus-visible:ring-destructive'
+                    )}
                   />
                   {fieldErrors.password ? (
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                    <p className="text-xs text-destructive mt-1">
                       {fieldErrors.password}
                     </p>
                   ) : (
-                    <p className="text-[11px] text-neutral-500">
-                      Must be at least 8 characters long and contain a mix of letters and numbers.
+                    <p className="text-xs text-muted-foreground">
+                      At least 8 characters with letters and numbers.
                     </p>
                   )}
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                  <Label htmlFor="confirm-new-password" className="text-sm font-medium">Confirm New Password</Label>
                   <Input
                     ref={confirmPasswordInputRef}
                     id="confirm-new-password"
                     type="password"
-                    placeholder="Repeat your new password"
+                    placeholder="Repeat new password"
                     value={confirmPassword}
                     onChange={(e) => {
                       setConfirmPassword(e.target.value);
@@ -218,10 +212,13 @@ export default function ResetPasswordPage() {
                     autoComplete="new-password"
                     disabled={loading}
                     aria-invalid={!!fieldErrors.confirmPassword}
-                    className={cn(fieldErrors.confirmPassword && 'border-red-500 focus-visible:ring-red-400')}
+                    className={cn(
+                      'h-10 text-base rounded-lg',
+                      fieldErrors.confirmPassword && 'border-destructive focus-visible:ring-destructive'
+                    )}
                   />
                   {fieldErrors.confirmPassword && (
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                    <p className="text-xs text-destructive mt-1">
                       {fieldErrors.confirmPassword}
                     </p>
                   )}
@@ -229,7 +226,7 @@ export default function ResetPasswordPage() {
 
                 <Button
                   type="submit"
-                  className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                  className="w-full h-10 text-base font-medium rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm cursor-pointer mt-2"
                   disabled={loading}
                 >
                   {loading ? (
@@ -245,13 +242,13 @@ export default function ResetPasswordPage() {
             ) : null}
           </CardContent>
 
-          <CardFooter className="pt-0 pb-4 text-center justify-center">
+          <CardFooter className="px-6 py-4 border-t border-border bg-muted/30 rounded-b-lg text-center justify-center">
             <Link
               href="/login"
-              className="inline-flex items-center text-xs text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200 font-medium"
+              className="text-xs text-muted-foreground hover:text-foreground font-medium inline-flex items-center gap-1.5"
             >
-              <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-              Back to Sign In
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Back to sign in
             </Link>
           </CardFooter>
         </Card>

@@ -144,65 +144,66 @@ export default function TeacherClassesPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50 flex items-center gap-2">
-            <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            My Classes
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Classes
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-            Manage your classroom rosters, approve student requests, and share join codes.
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage your classes, approve student enrollments, and share join codes.
           </p>
         </div>
 
-        <Button onClick={() => setCreateOpen(true)} className="w-full sm:w-auto shadow-sm">
+        <Button onClick={() => setCreateOpen(true)} className="w-full sm:w-auto rounded-lg h-9 bg-primary text-primary-foreground font-medium text-xs">
           <Plus className="w-4 h-4 mr-1.5" />
           Create Class
         </Button>
 
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md rounded-lg">
             <DialogHeader>
-              <DialogTitle>Create New Class</DialogTitle>
-              <DialogDescription>
-                Provide a name for your class. A unique 6-character join code will be generated automatically.
+              <DialogTitle className="text-base font-semibold">Create New Class</DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Enter a class name. A unique 6-character join code will be generated.
               </DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleCreateClass} className="space-y-4 py-2">
               {createError && (
-                <Alert variant="destructive" className="py-2.5">
+                <Alert variant="destructive" className="py-2.5 rounded-lg text-xs">
                   <AlertCircle className="h-4 w-4 shrink-0" />
-                  <AlertDescription className="text-xs ml-2">{createError}</AlertDescription>
+                  <AlertDescription className="ml-2">{createError}</AlertDescription>
                 </Alert>
               )}
 
               <div className="space-y-1.5">
-                <Label htmlFor="class-name">Class Name</Label>
+                <Label htmlFor="class-name" className="text-xs font-medium">Class Name</Label>
                 <Input
                   id="class-name"
-                  placeholder="e.g. Physics Section A, Grade 10 Math"
+                  placeholder="e.g. Grade 10 Mathematics"
                   value={newClassName}
                   onChange={(e) => setNewClassName(e.target.value)}
                   maxLength={100}
                   required
                   autoFocus
                   disabled={creating}
+                  className="rounded-lg h-10 text-base sm:text-sm"
                 />
               </div>
 
-              <DialogFooter className="pt-2">
+              <DialogFooter className="pt-2 gap-2 sm:gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setCreateOpen(false)}
                   disabled={creating}
+                  className="rounded-lg h-9 text-xs"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={creating || !newClassName.trim()}>
+                <Button type="submit" disabled={creating || !newClassName.trim()} className="rounded-lg h-9 bg-primary text-primary-foreground text-xs font-medium">
                   {creating ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -221,12 +222,12 @@ export default function TeacherClassesPage() {
       {/* Search and Filters */}
       {classes.length > 0 && (
         <div className="relative max-w-sm">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search classes or code..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 text-sm"
+            className="pl-9 text-sm rounded-lg h-9"
           />
         </div>
       )}
@@ -234,11 +235,11 @@ export default function TeacherClassesPage() {
       {/* Main Content Areas */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <span className="text-sm text-neutral-500">Loading your classes...</span>
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <span className="text-xs text-muted-foreground">Loading classes...</span>
         </div>
       ) : error ? (
-        <Alert variant="destructive" className="py-4">
+        <Alert variant="destructive" className="py-4 rounded-lg">
           <ShieldAlert className="h-5 w-5 shrink-0" />
           <div className="ml-3">
             <AlertDescription className="text-sm font-medium">{error}</AlertDescription>
@@ -246,35 +247,35 @@ export default function TeacherClassesPage() {
               variant="outline"
               size="sm"
               onClick={reloadClasses}
-              className="mt-3 text-xs border-red-300 dark:border-red-800"
+              className="mt-3 text-xs rounded-lg h-8"
             >
               Retry
             </Button>
           </div>
         </Alert>
       ) : classes.length === 0 ? (
-        <Card className="border-dashed border-2 py-12 text-center bg-neutral-50/50 dark:bg-neutral-900/50">
+        <Card className="rounded-lg border border-dashed border-border py-12 text-center bg-card shadow-sm">
           <CardContent className="space-y-4 max-w-md mx-auto">
-            <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 rounded-lg bg-secondary text-primary flex items-center justify-center mx-auto">
               <Users className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-                No classes created yet
+              <h3 className="text-base font-semibold text-foreground">
+                No classes yet
               </h3>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                Classes allow you to organize students, manage join requests, and assign specific exams to student cohorts.
+              <p className="text-xs text-muted-foreground mt-1">
+                Create a class to organize students and assign exams.
               </p>
             </div>
-            <Button onClick={() => setCreateOpen(true)} className="mt-2">
+            <Button onClick={() => setCreateOpen(true)} className="rounded-lg h-9 px-4 bg-primary text-primary-foreground text-xs font-medium">
               <Plus className="w-4 h-4 mr-1.5" />
-              Create Your First Class
+              Create a Class
             </Button>
           </CardContent>
         </Card>
       ) : filteredClasses.length === 0 ? (
-        <div className="text-center py-12 text-sm text-neutral-500">
-          No classes match &quot;{searchQuery}&quot;. Try a different search term.
+        <div className="text-center py-12 text-xs text-muted-foreground">
+          No classes match &quot;{searchQuery}&quot;.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -284,11 +285,11 @@ export default function TeacherClassesPage() {
             return (
               <Card
                 key={cls.id}
-                className="group relative flex flex-col justify-between hover:shadow-md transition-all border-neutral-200/80 dark:border-neutral-800 hover:border-blue-400 dark:hover:border-blue-700"
+                className="group relative flex flex-col justify-between rounded-lg border border-border shadow-sm hover:border-primary/50 transition-colors"
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base font-semibold text-neutral-900 dark:text-neutral-100 line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    <CardTitle className="text-base font-semibold text-foreground line-clamp-1">
                       <Link href={`/teacher/classes/${cls.id}`} className="hover:underline">
                         {cls.name}
                       </Link>
@@ -296,8 +297,8 @@ export default function TeacherClassesPage() {
 
                     {hasPending ? (
                       <Badge
-                        variant="destructive"
-                        className="bg-amber-500 hover:bg-amber-600 text-white font-medium text-[11px] px-2 py-0.5 shrink-0 flex items-center gap-1 shadow-xs"
+                        variant="outline"
+                        className="bg-amber-500/10 border-amber-400 text-amber-700 dark:text-amber-400 font-medium text-xs px-2 py-0.5 shrink-0 flex items-center gap-1 rounded"
                       >
                         <Clock className="w-3 h-3" />
                         {cls.pending_count} pending
@@ -305,25 +306,25 @@ export default function TeacherClassesPage() {
                     ) : (
                       <Badge
                         variant="outline"
-                        className="text-[11px] px-1.5 py-0 text-neutral-500 border-neutral-200 dark:border-neutral-700 shrink-0"
+                        className="text-xs px-2 py-0 font-normal text-muted-foreground border-border bg-secondary shrink-0 rounded"
                       >
                         {cls.join_enabled ? 'Active' : 'Locked'}
                       </Badge>
                     )}
                   </div>
-                  <CardDescription className="text-xs">
+                  <CardDescription className="text-xs text-muted-foreground">
                     Created {new Date(cls.created_at).toLocaleDateString()}
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="space-y-3.5 pb-3">
+                <CardContent className="space-y-3 pb-3">
                   {/* Join code display with quick copy */}
-                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800/60 border border-neutral-200/60 dark:border-neutral-700/60">
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-secondary border border-border">
                     <div>
-                      <span className="text-[10px] text-neutral-400 uppercase tracking-wider block font-semibold">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider block font-semibold">
                         Join Code
                       </span>
-                      <span className="font-mono font-bold text-base tracking-widest text-neutral-900 dark:text-neutral-100">
+                      <span className="font-mono font-bold text-base tracking-widest text-foreground">
                         {cls.join_code}
                       </span>
                     </div>
@@ -332,7 +333,7 @@ export default function TeacherClassesPage() {
                       variant="ghost"
                       size="sm"
                       onClick={(e) => handleCopyCode(cls.join_code, e)}
-                      className="h-8 px-2.5 text-xs text-neutral-600 dark:text-neutral-300 hover:text-blue-600 dark:hover:text-blue-400"
+                      className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground rounded-lg"
                       title="Copy join code"
                     >
                       {copiedCode === cls.join_code ? (
@@ -351,45 +352,45 @@ export default function TeacherClassesPage() {
 
                   {/* Members count metrics */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-2 rounded-md bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-neutral-800 flex items-center gap-2">
+                    <div className="p-2.5 rounded-lg bg-secondary border border-border flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <div>
-                        <div className="font-semibold text-neutral-800 dark:text-neutral-200">
+                        <div className="font-semibold text-foreground">
                           {cls.approved_count}
                         </div>
-                        <div className="text-[10px] text-neutral-500">Approved</div>
+                        <div className="text-[11px] text-muted-foreground">Enrolled</div>
                       </div>
                     </div>
 
                     <div
-                      className={`p-2 rounded-md border flex items-center gap-2 transition-colors ${
+                      className={`p-2.5 rounded-lg border flex items-center gap-2 ${
                         hasPending
-                          ? 'bg-amber-50/60 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50 text-amber-900 dark:text-amber-200'
-                          : 'bg-neutral-50 dark:bg-neutral-900/40 border-neutral-200/50 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300'
+                          ? 'bg-amber-500/10 border-amber-300 text-amber-800 dark:text-amber-300'
+                          : 'bg-secondary border-border text-muted-foreground'
                       }`}
                     >
                       <Clock
                         className={`w-4 h-4 shrink-0 ${
-                          hasPending ? 'text-amber-600 dark:text-amber-400' : 'text-neutral-400'
+                          hasPending ? 'text-amber-600' : 'text-muted-foreground'
                         }`}
                       />
                       <div>
-                        <div className="font-semibold">
+                        <div className="font-semibold text-foreground">
                           {cls.pending_count}
                         </div>
-                        <div className="text-[10px] opacity-80">Pending</div>
+                        <div className="text-[11px] opacity-80">Pending</div>
                       </div>
                     </div>
                   </div>
                 </CardContent>
 
-                <CardFooter className="pt-2 border-t border-neutral-100 dark:border-neutral-800/80">
+                <CardFooter className="pt-2 border-t border-border">
                   <Link
                     href={`/teacher/classes/${cls.id}`}
-                    className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'w-full justify-between text-xs font-medium' })}
+                    className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'w-full justify-between text-xs font-medium rounded-lg h-9' })}
                   >
-                    <span>Manage Class & Members</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
+                    <span>Manage Roster</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
                   </Link>
                 </CardFooter>
               </Card>

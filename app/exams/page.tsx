@@ -20,6 +20,7 @@ import {
   PlusCircle,
   Lock,
 } from 'lucide-react';
+import { mapApiError } from '@/lib/messages';
 
 interface ExamItem {
   id: string;
@@ -95,7 +96,7 @@ export default function StudentExamsPage() {
         }
       } catch (err: unknown) {
         if (!ignore) {
-          setErrorMsg(err instanceof Error ? err.message : 'Error loading exams');
+          setErrorMsg(mapApiError(err, 'Failed to load exams. Please try again.').message);
         }
       } finally {
         if (!ignore) {

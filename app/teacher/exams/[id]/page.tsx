@@ -33,6 +33,8 @@ import {
   Sparkles,
   CheckCircle2,
 } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
+import { mapApiError, MESSAGES } from '@/lib/messages';
 
 interface QuestionItem {
   id: string;
@@ -176,9 +178,10 @@ export default function TeacherExamDetailPage({
         throw new Error(data.message || 'Failed to duplicate question');
       }
 
+      toast.success(MESSAGES.success.questionDuplicated);
       fetchExamData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to duplicate question');
+      toast.error(mapApiError(err, 'Failed to duplicate question.').message);
     }
   };
 
@@ -195,8 +198,9 @@ export default function TeacherExamDetailPage({
         throw new Error(data.message || 'Failed to delete question');
       }
       setQuestions((prev) => prev.filter((item) => item.id !== qId));
+      toast.success(MESSAGES.success.questionDeleted);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to delete question');
+      toast.error(mapApiError(err, 'Failed to delete question.').message);
     } finally {
       setDeletingQId(null);
     }
@@ -231,8 +235,9 @@ export default function TeacherExamDetailPage({
       });
 
       await fetchExamData();
+      toast.success(MESSAGES.success.saved);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to reorder questions');
+      toast.error(mapApiError(err, 'Failed to reorder questions.').message);
     } finally {
       setReordering(false);
     }
@@ -250,8 +255,9 @@ export default function TeacherExamDetailPage({
         throw new Error(data.message || 'Failed to approve question');
       }
       fetchExamData();
+      toast.success('Question approved.');
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error approving question');
+      toast.error(mapApiError(err, 'Could not approve question.').message);
     }
   };
 

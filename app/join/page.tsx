@@ -8,7 +8,9 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AppMessage } from '@/components/ui/app-message';
 import { cn } from '@/lib/utils';
+import { MESSAGES } from '@/lib/messages';
 import {
   Users,
   CheckCircle2,
@@ -64,6 +66,7 @@ function getInitialCode(params: ReturnType<typeof useSearchParams>): string {
 
 function JoinClassForm() {
   const searchParams = useSearchParams();
+  const codeInputRef = React.useRef<HTMLInputElement>(null);
   const [code, setCode] = useState(() => getInitialCode(searchParams));
   const [submitting, setSubmitting] = useState(false);
   const [resultType, setResultType] = useState<JoinResultType>(null);
@@ -100,11 +103,13 @@ function JoinClassForm() {
 
     if (!normalizedCode) {
       setErrorMessage('Please enter a 6-character class code.');
+      codeInputRef.current?.focus();
       return;
     }
 
     if (normalizedCode.length !== 6) {
       setErrorMessage('Class codes are exactly 6 characters long.');
+      codeInputRef.current?.focus();
       return;
     }
 
@@ -370,30 +375,15 @@ function JoinClassForm() {
       )}
 
       {resultType === 'rate_limited' && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle className="text-xs font-semibold">Too Many Attempts</AlertTitle>
-          <AlertDescription className="text-xs mt-1">
-            Too many join attempts. Please wait a few minutes before trying again.
-          </AlertDescription>
-        </Alert>
+        <AppMessage message={MESSAGES.classes.rateLimited} />
       )}
 
       {resultType === 'invalid_code' && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle className="text-xs font-semibold">Invalid Code</AlertTitle>
-          <AlertDescription className="text-xs mt-1">
-            Invalid or disabled code. Please verify the 6-character code with your teacher.
-          </AlertDescription>
-        </Alert>
+        <AppMessage message={MESSAGES.classes.invalidCode} />
       )}
 
       {errorMessage && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription className="text-xs">{errorMessage}</AlertDescription>
-        </Alert>
+        <AppMessage message={errorMessage} type="error" />
       )}
 
       {/* Main Join Input Card */}
@@ -413,6 +403,7 @@ function JoinClassForm() {
               </Label>
               <div className="relative">
                 <Input
+                  ref={codeInputRef}
                   id="join-code"
                   type="text"
                   value={code}
@@ -421,7 +412,11 @@ function JoinClassForm() {
                   maxLength={6}
                   disabled={submitting}
                   autoFocus
-                  className="font-mono text-center text-2xl tracking-[0.25em] uppercase font-bold h-14 bg-neutral-50/50 dark:bg-neutral-900/50 border-neutral-300 dark:border-neutral-700"
+                  aria-invalid={!!errorMessage || resultType === 'invalid_code'}
+                  className={cn(
+                    "font-mono text-center text-2xl tracking-[0.25em] uppercase font-bold h-14 bg-neutral-50/50 dark:bg-neutral-900/50 border-neutral-300 dark:border-neutral-700",
+                    (errorMessage || resultType === 'invalid_code') && "border-red-500 focus-visible:ring-red-400"
+                  )}
                 />
               </div>
               <p className="text-[11px] text-neutral-400 text-center">

@@ -20,6 +20,7 @@ import {
   Sparkles,
   FileUp,
 } from 'lucide-react';
+import { MESSAGES, mapApiError } from '@/lib/messages';
 
 export interface ImportedQuestionItem {
   id: string;
@@ -97,7 +98,15 @@ export function PaperImportTab({ examId, onImportCompleted }: PaperImportTabProp
     if (!selected) return;
 
     if (selected.size > MAX_SIZE_MB * 1024 * 1024) {
-      setErrorMsg(`File size exceeds ${MAX_SIZE_MB}MB limit.`);
+      setErrorMsg(MESSAGES.uploadsAndAi.fileTooLarge.message);
+      return;
+    }
+
+    const validExtensions = ['.pdf', '.docx', '.png', '.jpg', '.jpeg', '.txt'];
+    const lowerName = selected.name.toLowerCase();
+    const isAllowed = validExtensions.some((ext) => lowerName.endsWith(ext));
+    if (!isAllowed) {
+      setErrorMsg(MESSAGES.uploadsAndAi.wrongFileType.message);
       return;
     }
 
@@ -129,7 +138,7 @@ export function PaperImportTab({ examId, onImportCompleted }: PaperImportTabProp
       setImportedQuestions(data.questions || []);
       onImportCompleted();
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error extracting paper');
+      setErrorMsg(mapApiError(err, 'Failed to extract questions. Please check the file and try again.').message);
     } finally {
       setIsExtracting(false);
     }

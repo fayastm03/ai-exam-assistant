@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -8,30 +8,81 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { GraduationCap, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { AppMessage } from '@/components/ui/app-message';
+import { GraduationCap, Loader2, ArrowRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { mapAuthError, type UserMessage, MESSAGES } from '@/lib/messages';
 
 function StudentSignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get('next');
 
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{
+    name?: string;
+    email?: string;
+    password?: string;
+  }>({});
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [pageMessage, setPageMessage] = useState<UserMessage | null>(null);
+
+  const validateFields = (): boolean => {
+    const errors: { name?: string; email?: string; password?: string } = {};
+    const cleanName = name.trim();
+    const cleanEmail = email.trim();
+
+    if (!cleanName) {
+      errors.name = 'Please enter your full name.';
+    }
+
+    if (!cleanEmail) {
+      errors.email = 'Please enter your email address.';
+    } else if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      errors.email = 'Please enter a valid email address.';
+    }
+
+    // Password rule: at least 8 characters long and contain a mix of letters and numbers
+    const hasLetters = /[a-zA-Z]/.test(password);
+    const hasNumbers = /[0-9]/.test(password);
+
+    if (password.length < 8 || !hasLetters || !hasNumbers) {
+      errors.password = MESSAGES.auth.passwordWeak.message;
+    }
+
+    setFieldErrors(errors);
+
+    if (errors.name) {
+      nameInputRef.current?.focus();
+      return false;
+    }
+    if (errors.email) {
+      emailInputRef.current?.focus();
+      return false;
+    }
+    if (errors.password) {
+      passwordInputRef.current?.focus();
+      return false;
+    }
+
+    return true;
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
-    setLoading(true);
+    setPageMessage(null);
 
-    if (password.length < 6) {
-      setErrorMsg('Password must be at least 6 characters long.');
-      setLoading(false);
+    if (!validateFields()) {
       return;
     }
+
+    setLoading(true);
 
     try {
       const supabase = createClient();
@@ -41,7 +92,7 @@ function StudentSignupForm() {
         ? `${origin}/auth/callback?next=${encodeURIComponent(next)}`
         : `${origin}/auth/callback`;
 
-      // STRICT SECURITY: We never pass role: 'teacher'. Role is always 'student'.
+      // STRICT SECURITY: Role is always student
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -55,7 +106,7 @@ function StudentSignupForm() {
       });
 
       if (error) {
-        setErrorMsg(error.message);
+        setPageMessage(mapAuthError(error));
         setLoading(false);
         return;
       }
@@ -69,10 +120,10 @@ function StudentSignupForm() {
         return;
       }
 
-      // If automatically confirmed or already confirmed, proceed to student destination
+      // If automatically confirmed or session established, proceed to student destination
       router.push(next && next.startsWith('/') ? next : '/exams');
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'An error occurred during sign up.');
+      setPageMessage(mapAuthError(err));
       setLoading(false);
     }
   };
@@ -96,92 +147,114 @@ function StudentSignupForm() {
           </div>
         </CardHeader>
 
-        <form onSubmit={handleSignup}>
+        <form onSubmit={handleSignup} noValidate>
           <CardContent className="space-y-4">
-            {errorMsg && (
-              <Alert variant="destructive" className="py-2.5">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-xs">{errorMsg}</AlertDescription>
-              </Alert>
-            )}
+            {pageMessage && <AppMessage message={pageMessage} />}
 
             <div className="space-y-1.5">
               <Label htmlFor="signup-name" className="text-xs font-medium">
-                Full Name *
+                Full Name
               </Label>
               <Input
+                ref={nameInputRef}
                 id="signup-name"
                 type="text"
-                required
                 placeholder="Alex Johnson"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }));
+                }}
                 disabled={loading}
                 autoComplete="name"
+                aria-invalid={!!fieldErrors.name}
+                className={cn(fieldErrors.name && 'border-red-500 focus-visible:ring-red-400')}
               />
+              {fieldErrors.name && (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{fieldErrors.name}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="signup-email" className="text-xs font-medium">
-                Email Address *
+                Email Address
               </Label>
               <Input
+                ref={emailInputRef}
                 id="signup-email"
                 type="email"
-                required
-                placeholder="alex@student.edu"
+                placeholder="student@school.edu"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                }}
                 disabled={loading}
                 autoComplete="email"
+                aria-invalid={!!fieldErrors.email}
+                className={cn(fieldErrors.email && 'border-red-500 focus-visible:ring-red-400')}
               />
+              {fieldErrors.email && (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="signup-password" className="text-xs font-medium">
-                Password *
+                Password
               </Label>
               <Input
+                ref={passwordInputRef}
                 id="signup-password"
                 type="password"
-                required
-                placeholder="At least 6 characters"
+                placeholder="At least 8 characters with letters & numbers"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (fieldErrors.password) {
+                    setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                  }
+                }}
                 disabled={loading}
                 autoComplete="new-password"
+                aria-invalid={!!fieldErrors.password}
+                className={cn(fieldErrors.password && 'border-red-500 focus-visible:ring-red-400')}
               />
-              <p className="text-[11px] text-neutral-400">Must be at least 6 characters.</p>
+              {fieldErrors.password ? (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{fieldErrors.password}</p>
+              ) : (
+                <p className="text-[11px] text-neutral-500">
+                  Must be at least 8 characters long and contain a mix of letters and numbers.
+                </p>
+              )}
             </div>
+          </CardContent>
 
+          <CardFooter className="flex-col gap-3 pt-2">
             <Button
               type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium mt-2"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating Account...
                 </>
               ) : (
                 <>
-                  Create Account <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  Create Account
+                  <ArrowRight className="ml-1.5 h-4 w-4" />
                 </>
               )}
             </Button>
-          </CardContent>
 
-          <CardFooter className="flex flex-col space-y-2 pt-2 border-t border-neutral-100 dark:border-neutral-900 text-center text-xs text-neutral-500">
-            <div>
+            <div className="text-center text-xs text-neutral-500 pt-1">
               Already have an account?{' '}
               <Link href={loginHref} className="text-blue-600 hover:underline font-medium">
-                Sign In
+                Sign in
               </Link>
             </div>
-            <p className="text-[11px] text-neutral-400">
-              Teacher accounts are managed directly by administration via SQL.
-            </p>
           </CardFooter>
         </form>
       </Card>
@@ -189,15 +262,9 @@ function StudentSignupForm() {
   );
 }
 
-export default function StudentSignupPage() {
+export default function SignupPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="text-sm text-neutral-500">Loading...</div>}>
       <StudentSignupForm />
     </Suspense>
   );

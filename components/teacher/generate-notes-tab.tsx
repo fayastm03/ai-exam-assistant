@@ -19,6 +19,7 @@ import {
   ArrowRight,
   X,
 } from 'lucide-react';
+import { mapApiError, MESSAGES } from '@/lib/messages';
 
 interface GenerateNotesTabProps {
   examId: string;
@@ -142,7 +143,12 @@ export function GenerateNotesTab({
       // Trigger parent reload
       onGenerated();
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'An error occurred during question generation.');
+      setErrorMsg(
+        mapApiError(
+          err,
+          MESSAGES.uploadsAndAi.aiBusy.message
+        ).message
+      );
     } finally {
       setGenerating(false);
     }

@@ -22,6 +22,8 @@ import {
   FileText,
   Users,
 } from 'lucide-react';
+import { AppMessage } from '@/components/ui/app-message';
+import { mapApiError, MESSAGES } from '@/lib/messages';
 
 interface ExamData {
   id: string;
@@ -81,7 +83,7 @@ export default function StudentExamInstructionsPage({
         }
       } catch (err: unknown) {
         if (!ignore) {
-          setErrorMsg(err instanceof Error ? err.message : 'Error loading exam');
+          setErrorMsg(mapApiError(err, 'Failed to load exam details.').message);
         }
       } finally {
         if (!ignore) {
@@ -110,8 +112,7 @@ export default function StudentExamInstructionsPage({
 
       if (res.status === 403) {
         setMembershipDeniedMsg(
-          data.message ||
-            'Access denied: You must be an approved member of a class assigned to this exam. Your membership may have been removed or is pending approval.'
+          data.message || MESSAGES.exams.noPermission.message
         );
         setStarting(false);
         return;
@@ -128,7 +129,7 @@ export default function StudentExamInstructionsPage({
 
       router.push(`/exams/${examId}/take`);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error starting exam');
+      setErrorMsg(mapApiError(err, 'Unable to begin exam session. Please try again.').message);
       setStarting(false);
     }
   };

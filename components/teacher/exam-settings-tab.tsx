@@ -88,7 +88,9 @@ export function ExamSettingsTab({ exam, onExamUpdated }: ExamSettingsTabProps) {
           }
         }
       } catch (err) {
-        console.error('Failed to load class assignment data:', err);
+        if (!ignore) {
+          setErrorMsg('Could not load classes. Please refresh the page to try again.');
+        }
       } finally {
         if (!ignore) {
           setClassesLoading(false);

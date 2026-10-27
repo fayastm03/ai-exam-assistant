@@ -29,6 +29,8 @@ import {
   ShieldAlert,
   Search,
 } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
+import { mapApiError, MESSAGES } from '@/lib/messages';
 
 interface ClassItem {
   id: string;
@@ -77,7 +79,7 @@ export default function TeacherClassesPage() {
         }
       } catch (err: unknown) {
         if (!ignore) {
-          setError(err instanceof Error ? err.message : 'An error occurred while loading classes');
+          setError(mapApiError(err, 'Failed to load classes. Please try again.').message);
         }
       } finally {
         if (!ignore) {
@@ -96,7 +98,7 @@ export default function TeacherClassesPage() {
   const handleCreateClass = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClassName.trim()) {
-      setCreateError('Class name is required');
+      setCreateError('Please enter a class name.');
       return;
     }
 
@@ -117,9 +119,10 @@ export default function TeacherClassesPage() {
 
       setNewClassName('');
       setCreateOpen(false);
+      toast.success(MESSAGES.success.saved);
       reloadClasses();
     } catch (err: unknown) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create class');
+      setCreateError(mapApiError(err, 'Could not create class. Please try again.').message);
     } finally {
       setCreating(false);
     }

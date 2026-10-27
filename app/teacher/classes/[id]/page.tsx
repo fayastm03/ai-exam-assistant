@@ -36,6 +36,8 @@ import {
   Mail,
   Calendar,
 } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
+import { mapApiError, MESSAGES } from '@/lib/messages';
 
 interface ClassData {
   id: string;
@@ -216,8 +218,9 @@ export default function TeacherClassDetailPage({
       }
       setCls(data.class);
       setIsEditingName(false);
+      toast.success(MESSAGES.success.saved);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error updating class name');
+      toast.error(mapApiError(err, 'Could not update class name.').message);
     } finally {
       setSavingName(false);
     }
@@ -238,8 +241,9 @@ export default function TeacherClassDetailPage({
       setCls(data.class);
       setRegenOpen(false);
       setRefreshKey((k) => k + 1);
+      toast.success(MESSAGES.success.codeRegenerated);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to regenerate code');
+      toast.error(mapApiError(err, 'Could not generate a new code.').message);
     } finally {
       setRegenerating(false);
     }
@@ -263,8 +267,15 @@ export default function TeacherClassDetailPage({
       }
       // Refresh roster
       await fetchMembers();
+      if (status === 'approved') {
+        toast.success(MESSAGES.success.approved);
+      } else if (status === 'rejected') {
+        toast.success(MESSAGES.success.declined);
+      } else if (status === 'removed') {
+        toast.success(MESSAGES.success.removed);
+      }
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error updating member status');
+      toast.error(mapApiError(err, 'Could not update membership status.').message);
     } finally {
       setActionInProgress(null);
     }

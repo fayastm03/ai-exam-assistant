@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, AlertTriangle, AlertCircle, Send, Loader2 } from 'lucide-react';
+import { mapApiError } from '@/lib/messages';
 
 interface PublishDialogProps {
   examId: string;
@@ -51,7 +52,10 @@ export function PublishButtonWithDialog({
       onPublishedSuccess(data.exam);
     } catch (err: unknown) {
       setErrorDetails([
-        err instanceof Error ? err.message : 'An unexpected error occurred while communicating with the server.',
+        mapApiError(
+          err,
+          'An unexpected problem occurred while publishing the exam. Please try again.'
+        ).message,
       ]);
       setErrorModalOpen(true);
     } finally {

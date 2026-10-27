@@ -32,6 +32,8 @@ import {
   BookOpen,
   BarChart3,
 } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
+import { mapApiError, MESSAGES } from '@/lib/messages';
 
 interface ExamListItem {
   id: string;
@@ -173,8 +175,9 @@ export default function TeacherExamsPage() {
         throw new Error(data.message || 'Failed to delete exam');
       }
       setExams((prev) => prev.filter((e) => e.id !== examId));
+      toast.success(MESSAGES.success.examDeleted);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to delete exam');
+      toast.error(mapApiError(err, 'Failed to delete exam.').message);
     } finally {
       setDeletingId(null);
     }

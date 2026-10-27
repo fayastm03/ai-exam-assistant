@@ -28,6 +28,8 @@ import {
   LayoutGrid,
   WifiOff,
 } from 'lucide-react';
+import { toast } from '@/components/ui/toast';
+import { mapApiError, MESSAGES } from '@/lib/messages';
 
 interface QuestionItem {
   id: string;
@@ -190,7 +192,7 @@ export default function StudentExamTakePage({
         router.replace(`/exams/${examId}/result`);
       } catch (err: unknown) {
         if (!isAutoSubmit) {
-          alert(err instanceof Error ? err.message : 'Error submitting exam. Please retry.');
+          toast.error(mapApiError(err, 'Failed to submit exam. Please try again.').message);
           setSubmittingManual(false);
         } else {
           // If auto-submit failed on network drop, retry in 3 seconds
@@ -432,7 +434,7 @@ export default function StudentExamTakePage({
             <WifiOff className="w-4 h-4 shrink-0" />
             <span>
               {!isOnline
-                ? 'Network connection lost. Your selected answers are preserved locally; we will automatically retry saving when reconnected.'
+                ? MESSAGES.system.offline.message
                 : 'Connection unstable. Retrying unsaved answers in the background...'}
             </span>
           </div>

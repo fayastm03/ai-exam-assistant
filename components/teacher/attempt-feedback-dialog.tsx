@@ -30,6 +30,7 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
+import { mapApiError, MESSAGES } from '@/lib/messages';
 
 interface AttemptFeedbackData {
   exam: {
@@ -214,9 +215,14 @@ export function AttemptFeedbackDialog({
       }
       setOverallComment(suggestedText);
       setAiDraftPending(true);
-      setSuccessMsg('AI draft feedback suggested! You can review and edit it before saving.');
+      setSuccessMsg('AI draft feedback suggested. You can review and edit it before saving.');
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error suggesting feedback');
+      setErrorMsg(
+        mapApiError(
+          err,
+          'The AI service is temporarily busy. Your exam and marking are not affected. Please try again in a minute.'
+        ).message
+      );
     } finally {
       setSuggesting(false);
     }
@@ -264,9 +270,7 @@ export function AttemptFeedbackDialog({
 
       setAiDraftPending(false);
       setSuccessMsg(
-        released
-          ? 'Feedback released to the student!'
-          : 'Draft feedback saved successfully.'
+        released ? MESSAGES.success.released : MESSAGES.success.saved
       );
 
       // Re-fetch to update release statuses
@@ -282,7 +286,7 @@ export function AttemptFeedbackDialog({
         onFeedbackSaved();
       }
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error saving feedback');
+      setErrorMsg(mapApiError(err, 'Failed to save feedback. Please try again.').message);
     } finally {
       setSaving(false);
     }

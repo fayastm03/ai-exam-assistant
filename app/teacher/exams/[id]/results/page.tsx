@@ -26,6 +26,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { AttemptFeedbackDialog } from '@/components/teacher/attempt-feedback-dialog';
+import { mapApiError } from '@/lib/messages';
 
 interface StudentResultItem {
   attemptId: string;
@@ -178,12 +179,11 @@ export default function TeacherExamResultsPage({
         }
       }
     } catch (err: unknown) {
-      console.error('Error during bulk AI feedback generation:', err);
       setBulkProgress((prev) => ({
         processed: prev?.processed ?? totalDone,
         total: prev?.total ?? totalDone,
         failed: totalFailed,
-        message: err instanceof Error ? err.message : 'Error generating bulk feedback',
+        message: mapApiError(err, 'Could not generate bulk feedback. Please try again.').message,
       }));
     } finally {
       setBulkGenerating(false);
@@ -215,7 +215,7 @@ export default function TeacherExamResultsPage({
         }
       } catch (err: unknown) {
         if (!ignore) {
-          setErrorMsg(err instanceof Error ? err.message : 'Error loading results');
+          setErrorMsg(mapApiError(err, 'Failed to load exam results. Please try again.').message);
         }
       } finally {
         if (!ignore) {

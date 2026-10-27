@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -8,50 +8,43 @@ import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { GraduationCap, AlertCircle, Loader2, CheckCircle2, Mail } from 'lucide-react';
+import { AppMessage } from '@/components/ui/app-message';
+import { GraduationCap, Loader2, Mail } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { mapAuthError, mapUrlAuthParam, type UserMessage, MESSAGES } from '@/lib/messages';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [emailUnconfirmedManual, setEmailUnconfirmedManual] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Derive initial error & success message from query parameters
+  const [pageMessage, setPageMessage] = useState<UserMessage | null>(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      return mapUrlAuthParam(errorParam);
+    }
+    const successParam = searchParams.get('success');
+    if (successParam === 'registered') {
+      return { type: 'success', message: MESSAGES.success.registered };
+    }
+    if (successParam === 'reset_success') {
+      return { type: 'success', message: MESSAGES.success.passwordUpdated };
+    }
+    return null;
+  });
+
   const errorParam = searchParams.get('error');
-  const successParam = searchParams.get('success');
-
   const isEmailUnconfirmed = emailUnconfirmedManual || errorParam === 'email_not_confirmed';
-
-  const urlError =
-    errorParam === 'auth_required'
-      ? 'Please sign in to access this page.'
-      : errorParam === 'session_expired'
-      ? 'Your session has expired. Please sign in again.'
-      : errorParam === 'teacher_required'
-      ? 'Access denied: You must be a teacher to view the teacher dashboard.'
-      : errorParam === 'student_required'
-      ? 'Access denied: You must be a student to view the student portal.'
-      : errorParam === 'email_not_confirmed'
-      ? 'Your email address is not confirmed. Please check your inbox or resend the verification email below.'
-      : null;
-
-  const urlSuccess =
-    successParam === 'registered'
-      ? 'Account created! Please check your email to confirm your account before signing in.'
-      : successParam === 'reset_success'
-      ? 'Your password has been reset successfully. Please sign in with your new password.'
-      : null;
-
-  const activeError = errorMsg || urlError;
-  const activeSuccess = successMsg || urlSuccess;
 
   // Handle countdown for resend button
   React.useEffect(() => {
@@ -62,13 +55,44 @@ function LoginForm() {
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
+  const validateFields = (): boolean => {
+    const errors: { email?: string; password?: string } = {};
+    const cleanEmail = email.trim();
+
+    if (!cleanEmail) {
+      errors.email = 'Please enter your email address.';
+    } else if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      errors.email = 'Please enter a valid email address.';
+    }
+
+    if (!password) {
+      errors.password = 'Please enter your password.';
+    }
+
+    setFieldErrors(errors);
+
+    if (errors.email) {
+      emailInputRef.current?.focus();
+      return false;
+    }
+    if (errors.password) {
+      passwordInputRef.current?.focus();
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg(null);
-    setSuccessMsg(null);
+    setPageMessage(null);
     setEmailUnconfirmedManual(false);
-    setLoading(true);
 
+    if (!validateFields()) {
+      return;
+    }
+
+    setLoading(true);
     const cleanEmail = email.trim();
 
     try {
@@ -79,19 +103,11 @@ function LoginForm() {
       });
 
       if (error) {
-        const isUnconfirmed =
-          error.message.toLowerCase().includes('email not confirmed') ||
-          error.message.toLowerCase().includes('not confirmed') ||
-          error.status === 400 && error.message.toLowerCase().includes('email');
-
-        if (isUnconfirmed) {
+        const mapped = mapAuthError(error);
+        if (mapped.actionKey === 'resend_confirmation') {
           setEmailUnconfirmedManual(true);
-          setErrorMsg(
-            'Your email address is not confirmed. Please check your inbox or resend the confirmation email below.'
-          );
-        } else {
-          setErrorMsg(error.message);
         }
+        setPageMessage(mapped);
         setLoading(false);
         return;
       }
@@ -100,9 +116,7 @@ function LoginForm() {
         // Double check confirmation
         if (!data.user.email_confirmed_at) {
           setEmailUnconfirmedManual(true);
-          setErrorMsg(
-            'Your email address is not confirmed. Please check your inbox or click Resend below.'
-          );
+          setPageMessage(MESSAGES.auth.emailNotConfirmed);
           await supabase.auth.signOut();
           setLoading(false);
           return;
@@ -128,7 +142,7 @@ function LoginForm() {
         router.refresh();
       }
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Failed to sign in. Please try again.');
+      setPageMessage(mapAuthError(err));
       setLoading(false);
     }
   };
@@ -136,12 +150,13 @@ function LoginForm() {
   const handleResendConfirmation = async () => {
     const cleanEmail = email.trim();
     if (!cleanEmail) {
-      setErrorMsg('Please enter your email address to resend confirmation.');
+      setFieldErrors({ email: 'Please enter your email address to resend confirmation.' });
+      emailInputRef.current?.focus();
       return;
     }
 
     setResending(true);
-    setErrorMsg(null);
+    setPageMessage(null);
 
     try {
       const supabase = createClient();
@@ -154,15 +169,16 @@ function LoginForm() {
       });
 
       if (error) {
-        setErrorMsg(error.message);
+        setPageMessage(mapAuthError(error));
       } else {
-        setSuccessMsg(`Confirmation email sent to ${cleanEmail}. Please check your inbox.`);
+        setPageMessage({
+          type: 'success',
+          message: `Confirmation email sent to ${cleanEmail}. Please check your inbox.`,
+        });
         setResendCooldown(60);
       }
     } catch (err: unknown) {
-      setErrorMsg(
-        err instanceof Error ? err.message : 'Failed to resend confirmation email.'
-      );
+      setPageMessage(mapAuthError(err));
     } finally {
       setResending(false);
     }
@@ -193,26 +209,19 @@ function LoginForm() {
         </CardHeader>
 
         <CardContent className="space-y-4 pt-0">
-          {activeError && (
-            <Alert variant="destructive" className="py-2.5">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <div className="ml-2">
-                <AlertTitle className="text-xs font-semibold">Error</AlertTitle>
-                <AlertDescription className="text-xs">{activeError}</AlertDescription>
-              </div>
-            </Alert>
+          {pageMessage && (
+            <AppMessage
+              message={pageMessage}
+              actionLabel={pageMessage.actionLabel}
+              onAction={
+                pageMessage.actionKey === 'resend_confirmation'
+                  ? handleResendConfirmation
+                  : undefined
+              }
+            />
           )}
 
-          {activeSuccess && (
-            <Alert className="py-2.5 border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-              <div className="ml-2">
-                <AlertDescription className="text-xs">{activeSuccess}</AlertDescription>
-              </div>
-            </Alert>
-          )}
-
-          {isEmailUnconfirmed && (
+          {isEmailUnconfirmed && !pageMessage?.actionKey && (
             <div className="p-3.5 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 space-y-2">
               <div className="flex items-start gap-2">
                 <Mail className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
@@ -245,20 +254,33 @@ function LoginForm() {
             </div>
           )}
 
-          <form onSubmit={handleSignIn} className="space-y-4">
+          <form onSubmit={handleSignIn} className="space-y-4" noValidate>
             <div className="space-y-1.5">
               <Label htmlFor="signin-email">Email Address</Label>
               <Input
+                ref={emailInputRef}
                 id="signin-email"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) {
+                    setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                  }
+                }}
+                aria-invalid={!!fieldErrors.email}
+                className={cn(fieldErrors.email && 'border-red-500 focus-visible:ring-red-400')}
                 autoComplete="email"
                 disabled={loading}
               />
+              {fieldErrors.email && (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                  {fieldErrors.email}
+                </p>
+              )}
             </div>
+
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="signin-password">Password</Label>
@@ -270,15 +292,27 @@ function LoginForm() {
                 </Link>
               </div>
               <Input
+                ref={passwordInputRef}
                 id="signin-password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (fieldErrors.password) {
+                    setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                  }
+                }}
+                aria-invalid={!!fieldErrors.password}
+                className={cn(fieldErrors.password && 'border-red-500 focus-visible:ring-red-400')}
                 autoComplete="current-password"
                 disabled={loading}
               />
+              {fieldErrors.password && (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                  {fieldErrors.password}
+                </p>
+              )}
             </div>
 
             <Button type="submit" className="w-full mt-2" disabled={loading}>
@@ -298,7 +332,11 @@ function LoginForm() {
           <p className="text-xs text-neutral-500">
             Don&apos;t have an account yet?{' '}
             <Link
-              href={searchParams.get('next') ? `/signup?next=${encodeURIComponent(searchParams.get('next')!)}` : '/signup'}
+              href={
+                searchParams.get('next')
+                  ? `/signup?next=${encodeURIComponent(searchParams.get('next')!)}`
+                  : '/signup'
+              }
               className="text-blue-600 font-semibold hover:underline dark:text-blue-400"
             >
               Sign up as a student

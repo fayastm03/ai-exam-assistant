@@ -22,6 +22,7 @@ import {
   BookOpen,
   MessageSquare,
 } from 'lucide-react';
+import { mapApiError } from '@/lib/messages';
 
 interface QuestionReview {
   id: string;
@@ -127,7 +128,7 @@ export default function StudentExamResultPage({
         }
       } catch (err: unknown) {
         if (!ignore) {
-          setErrorMsg(err instanceof Error ? err.message : 'Error loading results');
+          setErrorMsg(mapApiError(err, 'Failed to load examination results. Please try again.').message);
         }
       } finally {
         if (!ignore) {

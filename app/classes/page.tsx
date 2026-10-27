@@ -19,6 +19,7 @@ import {
   UserCheck,
   Calendar,
 } from 'lucide-react';
+import { mapApiError } from '@/lib/messages';
 
 interface StudentClassItem {
   membership_id: string;
@@ -77,7 +78,7 @@ export default function MyClassesPage() {
         }
       } catch (err: unknown) {
         if (!ignore) {
-          setErrorMsg(err instanceof Error ? err.message : 'Error loading classes');
+          setErrorMsg(mapApiError(err, 'Failed to load classes. Please try again.').message);
         }
       } finally {
         if (!ignore) {

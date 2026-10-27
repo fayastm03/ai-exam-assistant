@@ -1,20 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { GraduationCap, ArrowLeft, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { AppMessage } from '@/components/ui/app-message';
+import { GraduationCap, ArrowLeft, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { mapAuthError, type UserMessage, MESSAGES } from '@/lib/messages';
 
 export default function ForgotPasswordPage() {
+  const emailInputRef = useRef<HTMLInputElement>(null);
+
   const [email, setEmail] = useState('');
+  const [fieldError, setFieldError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [pageMessage, setPageMessage] = useState<UserMessage | null>(null);
   const [cooldown, setCooldown] = useState(0);
 
   React.useEffect(() => {
@@ -28,14 +32,22 @@ export default function ForgotPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = email.trim();
+
     if (!cleanEmail) {
-      setErrorMsg('Please enter your email address.');
+      setFieldError('Please enter your email address.');
+      emailInputRef.current?.focus();
       return;
     }
 
+    if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setFieldError('Please enter a valid email address.');
+      emailInputRef.current?.focus();
+      return;
+    }
+
+    setFieldError(null);
     setLoading(true);
-    setErrorMsg(null);
-    setSuccess(false);
+    setPageMessage(null);
 
     try {
       const supabase = createClient();
@@ -49,15 +61,16 @@ export default function ForgotPasswordPage() {
       });
 
       if (error) {
-        setErrorMsg(error.message);
+        setPageMessage(mapAuthError(error));
       } else {
-        setSuccess(true);
+        setPageMessage({
+          type: 'success',
+          message: MESSAGES.success.passwordResetSent,
+        });
         setCooldown(60);
       }
     } catch (err: unknown) {
-      setErrorMsg(
-        err instanceof Error ? err.message : 'Failed to send password reset email. Please try again.'
-      );
+      setPageMessage(mapAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -89,87 +102,56 @@ export default function ForgotPasswordPage() {
           </CardHeader>
 
           <CardContent className="space-y-4 pt-0">
-            {errorMsg && (
-              <Alert variant="destructive" className="py-2.5">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <AlertDescription className="text-xs ml-2">{errorMsg}</AlertDescription>
-              </Alert>
-            )}
+            {pageMessage && <AppMessage message={pageMessage} />}
 
-            {success ? (
-              <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 space-y-3">
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                  <div className="text-xs text-emerald-900 dark:text-emerald-200 space-y-1">
-                    <p className="font-semibold text-sm">Check your email</p>
-                    <p>
-                      If an account exists for <span className="font-medium underline">{email}</span>,
-                      we have sent password reset instructions to your inbox.
-                    </p>
-                    <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
-                      The link expires in 1 hour. Be sure to check your spam or junk folder.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSubmit}
-                    disabled={loading || cooldown > 0}
-                    className="w-full text-xs h-8"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                        Resending...
-                      </>
-                    ) : cooldown > 0 ? (
-                      `Resend in ${cooldown}s`
-                    ) : (
-                      'Resend Reset Link'
-                    )}
-                  </Button>
-                </div>
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              <div className="space-y-1.5">
+                <Label htmlFor="recovery-email">Email Address</Label>
+                <Input
+                  ref={emailInputRef}
+                  id="recovery-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (fieldError) setFieldError(null);
+                  }}
+                  autoComplete="email"
+                  disabled={loading}
+                  aria-invalid={!!fieldError}
+                  className={cn(fieldError && 'border-red-500 focus-visible:ring-red-400')}
+                />
+                {fieldError && (
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">{fieldError}</p>
+                )}
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="forgot-email">Email Address</Label>
-                  <Input
-                    id="forgot-email"
-                    type="email"
-                    placeholder="student@school.edu"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                    disabled={loading}
-                  />
-                </div>
 
-                <Button type="submit" className="w-full mt-2" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending Link...
-                    </>
-                  ) : (
-                    'Send Reset Link'
-                  )}
-                </Button>
-              </form>
-            )}
+              <Button
+                type="submit"
+                className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                disabled={loading || cooldown > 0}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending Instructions...
+                  </>
+                ) : cooldown > 0 ? (
+                  `Resend in ${cooldown}s`
+                ) : (
+                  'Send Reset Link'
+                )}
+              </Button>
+            </form>
           </CardContent>
 
           <CardFooter className="pt-0 pb-4 text-center justify-center">
             <Link
               href="/login"
-              className="inline-flex items-center text-xs text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200"
+              className="inline-flex items-center text-xs text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200 font-medium"
             >
-              <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+              <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
               Back to Sign In
             </Link>
           </CardFooter>

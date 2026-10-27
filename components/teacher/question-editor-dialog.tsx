@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Trash2, AlertCircle, Loader2 } from 'lucide-react';
+import { mapApiError } from '@/lib/messages';
 
 export interface QuestionData {
   id?: string;
@@ -157,7 +158,9 @@ function QuestionFormContent({
       onSaved();
       onClose();
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error saving question');
+      setErrorMsg(
+        mapApiError(err, 'Failed to save question. Please check all fields and try again.').message
+      );
     } finally {
       setLoading(false);
     }

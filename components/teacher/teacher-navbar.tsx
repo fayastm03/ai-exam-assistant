@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { GraduationCap, LogOut, BookOpen, Users } from 'lucide-react';
+import { GraduationCap, LogOut, BookOpen, Users, Loader2 } from 'lucide-react';
 
 interface TeacherNavbarProps {
   userName: string;
@@ -14,14 +14,20 @@ interface TeacherNavbarProps {
 }
 
 export function TeacherNavbar({ userName }: TeacherNavbarProps) {
-  const router = useRouter();
   const pathname = usePathname();
+  const [signingOut, setSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      await fetch('/api/auth/signout', { method: 'POST' }).catch(() => {});
+    } catch {
+      // Ignore network errors and continue navigation
+    }
+    window.location.href = '/login';
   };
 
   const isExamsActive = pathname.startsWith('/teacher/exams');
@@ -85,11 +91,18 @@ export function TeacherNavbar({ userName }: TeacherNavbarProps) {
             variant="ghost"
             size="sm"
             onClick={handleSignOut}
-            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg h-8 text-xs"
+            disabled={signingOut}
+            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg h-8 text-xs cursor-pointer"
             title="Sign Out"
           >
-            <LogOut className="w-3.5 h-3.5 sm:mr-1.5" />
-            <span className="hidden sm:inline">Sign Out</span>
+            {signingOut ? (
+              <Loader2 className="w-3.5 h-3.5 sm:mr-1.5 animate-spin" />
+            ) : (
+              <LogOut className="w-3.5 h-3.5 sm:mr-1.5" />
+            )}
+            <span className="hidden sm:inline">
+              {signingOut ? 'Signing Out...' : 'Sign Out'}
+            </span>
           </Button>
         </div>
       </div>

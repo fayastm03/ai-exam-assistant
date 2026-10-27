@@ -31,28 +31,74 @@ export default function ResetPasswordPage() {
   const [pageMessage, setPageMessage] = useState<UserMessage | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+    const supabase = createClient();
+
+    // 1. Subscribe to auth state change (handles PASSWORD_RECOVERY, SIGNED_IN, hash parsing)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      if (session) {
+        setHasSession(true);
+        setCheckingSession(false);
+        setPageMessage(null);
+      }
+    });
+
+    // 2. Check active session immediately
     async function verifyAuth() {
       try {
-        const supabase = createClient();
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
+        if (!mounted) return;
+
         if (session) {
           setHasSession(true);
-        } else {
+          setCheckingSession(false);
+          return;
+        }
+
+        // If URL contains access_token hash, give the client a moment to parse it
+        if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+          setTimeout(async () => {
+            if (!mounted) return;
+            const {
+              data: { session: retrySession },
+            } = await supabase.auth.getSession();
+            if (retrySession) {
+              setHasSession(true);
+            } else {
+              setHasSession(false);
+              setPageMessage(MESSAGES.auth.linkExpiredOrUsed);
+            }
+            setCheckingSession(false);
+          }, 800);
+          return;
+        }
+
+        setHasSession(false);
+        setPageMessage(MESSAGES.auth.linkExpiredOrUsed);
+      } catch {
+        if (mounted) {
           setHasSession(false);
           setPageMessage(MESSAGES.auth.linkExpiredOrUsed);
         }
-      } catch {
-        setHasSession(false);
-        setPageMessage(MESSAGES.auth.linkExpiredOrUsed);
       } finally {
-        setCheckingSession(false);
+        if (mounted && !(typeof window !== 'undefined' && window.location.hash.includes('access_token'))) {
+          setCheckingSession(false);
+        }
       }
     }
 
     verifyAuth();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const validateFields = (): boolean => {
@@ -112,9 +158,10 @@ export default function ResetPasswordPage() {
         setLoading(false);
 
         await supabase.auth.signOut();
+        await fetch('/api/auth/signout', { method: 'POST' }).catch(() => {});
 
         setTimeout(() => {
-          router.push('/login?success=reset_success');
+          window.location.href = '/login?success=reset_success';
         }, 1500);
       }
     } catch (err: unknown) {

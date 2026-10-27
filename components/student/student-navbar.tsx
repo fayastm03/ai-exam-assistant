@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { GraduationCap, LogOut, BookOpen, Users, PlusCircle } from 'lucide-react';
+import { GraduationCap, LogOut, BookOpen, Users, PlusCircle, Loader2 } from 'lucide-react';
 
 interface StudentNavbarProps {
   userName: string;
@@ -14,14 +14,20 @@ interface StudentNavbarProps {
 }
 
 export function StudentNavbar({ userName }: StudentNavbarProps) {
-  const router = useRouter();
   const pathname = usePathname();
+  const [signingOut, setSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      await fetch('/api/auth/signout', { method: 'POST' }).catch(() => {});
+    } catch {
+      // Ignore network errors and continue navigation
+    }
+    window.location.href = '/login';
   };
 
   const isExamsActive = pathname.startsWith('/exams');
@@ -91,10 +97,15 @@ export function StudentNavbar({ userName }: StudentNavbarProps) {
             variant="ghost"
             size="sm"
             onClick={handleSignOut}
+            disabled={signingOut}
             className="text-xs text-muted-foreground hover:text-foreground h-8 px-2.5 rounded-lg cursor-pointer"
           >
-            <LogOut className="w-3.5 h-3.5 mr-1.5" />
-            Sign Out
+            {signingOut ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <LogOut className="w-3.5 h-3.5 mr-1.5" />
+            )}
+            {signingOut ? 'Signing Out...' : 'Sign Out'}
           </Button>
         </div>
       </div>

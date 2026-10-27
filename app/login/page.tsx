@@ -40,6 +40,9 @@ function LoginForm() {
     if (successParam === 'reset_success') {
       return { type: 'success', message: MESSAGES.success.passwordUpdated };
     }
+    if (successParam === 'confirmed') {
+      return { type: 'success', message: MESSAGES.success.emailConfirmed };
+    }
     return null;
   });
 
@@ -129,14 +132,18 @@ function LoginForm() {
         const userRole = profile?.role ?? data.user.user_metadata?.role ?? 'student';
         const next = searchParams.get('next');
 
-        if (next && next.startsWith('/') && !next.startsWith('//')) {
-          router.push(next);
-        } else if (userRole === 'teacher') {
-          router.push('/teacher/exams');
-        } else {
-          router.push('/exams');
-        }
-        router.refresh();
+        const targetUrl =
+          next && next.startsWith('/') && !next.startsWith('//')
+            ? next
+            : userRole === 'teacher'
+            ? '/teacher/exams'
+            : '/exams';
+
+        // Hard browser navigation ensures session cookies are cleanly sent to server components
+        // and prevents soft-routing race conditions that leave the button stuck on "Signing In..."
+        window.location.href = targetUrl;
+      } else {
+        setLoading(false);
       }
     } catch (err: unknown) {
       setPageMessage(mapAuthError(err));

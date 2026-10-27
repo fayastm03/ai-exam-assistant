@@ -209,6 +209,8 @@ export const MESSAGES = {
       'Password reset email sent. Check your inbox for instructions.',
     passwordUpdated:
       'Password updated successfully. Please sign in with your new password.',
+    emailConfirmed:
+      'Your email has been confirmed. You can now sign in.',
   },
 };
 
@@ -321,6 +323,8 @@ export function mapUrlAuthParam(code: string | null): UserMessage | null {
       return MESSAGES.auth.emailNotConfirmed;
     case 'confirmation_failed':
       return MESSAGES.auth.linkExpiredOrUsed;
+    case 'confirmed':
+      return { type: 'success', message: MESSAGES.success.emailConfirmed };
     default:
       return null;
   }

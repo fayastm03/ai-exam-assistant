@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,10 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GraduationCap, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 
-export default function StudentSignupPage() {
+function StudentSignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get('next');
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -35,6 +37,10 @@ export default function StudentSignupPage() {
       const supabase = createClient();
       const origin = window.location.origin;
 
+      const callbackUrl = next
+        ? `${origin}/auth/callback?next=${encodeURIComponent(next)}`
+        : `${origin}/auth/callback`;
+
       // STRICT SECURITY: We never pass role: 'teacher'. Role is always 'student'.
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -44,7 +50,7 @@ export default function StudentSignupPage() {
             name: name.trim(),
             full_name: name.trim(),
           },
-          emailRedirectTo: `${origin}/auth/callback`,
+          emailRedirectTo: callbackUrl,
         },
       });
 
@@ -56,17 +62,22 @@ export default function StudentSignupPage() {
 
       // Check if email confirmation is required
       if (data.user && (!data.session || !data.user.email_confirmed_at)) {
-        router.push(`/signup/check-email?email=${encodeURIComponent(email.trim())}`);
+        const checkEmailUrl = `/signup/check-email?email=${encodeURIComponent(email.trim())}${
+          next ? `&next=${encodeURIComponent(next)}` : ''
+        }`;
+        router.push(checkEmailUrl);
         return;
       }
 
-      // If automatically confirmed or already confirmed, proceed to student dashboard
-      router.push('/exams');
+      // If automatically confirmed or already confirmed, proceed to student destination
+      router.push(next && next.startsWith('/') ? next : '/exams');
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'An error occurred during sign up.');
       setLoading(false);
     }
   };
+
+  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : '/login';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950 px-4 py-8">
@@ -100,12 +111,13 @@ export default function StudentSignupPage() {
               </Label>
               <Input
                 id="signup-name"
-                placeholder="Jane Doe"
+                type="text"
+                required
+                placeholder="Alex Johnson"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                required
                 disabled={loading}
-                className="h-9 text-xs"
+                autoComplete="name"
               />
             </div>
 
@@ -116,12 +128,12 @@ export default function StudentSignupPage() {
               <Input
                 id="signup-email"
                 type="email"
-                placeholder="student@example.com"
+                required
+                placeholder="alex@student.edu"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
                 disabled={loading}
-                className="h-9 text-xs"
+                autoComplete="email"
               />
             </div>
 
@@ -132,20 +144,20 @@ export default function StudentSignupPage() {
               <Input
                 id="signup-password"
                 type="password"
+                required
                 placeholder="At least 6 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
                 disabled={loading}
-                className="h-9 text-xs"
+                autoComplete="new-password"
               />
+              <p className="text-[11px] text-neutral-400">Must be at least 6 characters.</p>
             </div>
 
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-9 text-xs font-semibold bg-blue-600 hover:bg-blue-700 shadow-sm mt-2"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium mt-2"
             >
               {loading ? (
                 <>
@@ -163,7 +175,7 @@ export default function StudentSignupPage() {
           <CardFooter className="flex flex-col space-y-2 pt-2 border-t border-neutral-100 dark:border-neutral-900 text-center text-xs text-neutral-500">
             <div>
               Already have an account?{' '}
-              <Link href="/login" className="text-blue-600 hover:underline font-medium">
+              <Link href={loginHref} className="text-blue-600 hover:underline font-medium">
                 Sign In
               </Link>
             </div>
@@ -174,5 +186,19 @@ export default function StudentSignupPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function StudentSignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        </div>
+      }
+    >
+      <StudentSignupForm />
+    </Suspense>
   );
 }

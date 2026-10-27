@@ -116,8 +116,11 @@ function LoginForm() {
           .single();
 
         const userRole = profile?.role ?? data.user.user_metadata?.role ?? 'student';
+        const next = searchParams.get('next');
 
-        if (userRole === 'teacher') {
+        if (next && next.startsWith('/') && !next.startsWith('//')) {
+          router.push(next);
+        } else if (userRole === 'teacher') {
           router.push('/teacher/exams');
         } else {
           router.push('/exams');
@@ -295,7 +298,7 @@ function LoginForm() {
           <p className="text-xs text-neutral-500">
             Don&apos;t have an account yet?{' '}
             <Link
-              href="/signup"
+              href={searchParams.get('next') ? `/signup?next=${encodeURIComponent(searchParams.get('next')!)}` : '/signup'}
               className="text-blue-600 font-semibold hover:underline dark:text-blue-400"
             >
               Sign up as a student

@@ -40,7 +40,10 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   const isTeacherRoute = pathname.startsWith('/teacher');
-  const isStudentRoute = pathname.startsWith('/exams');
+  const isStudentRoute =
+    pathname.startsWith('/exams') ||
+    pathname.startsWith('/classes') ||
+    pathname === '/join';
   const isRootRoute = pathname === '/';
 
   // 1. If user is NOT logged in:
@@ -48,7 +51,13 @@ export async function proxy(request: NextRequest) {
     if (isTeacherRoute || isStudentRoute) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
-      url.searchParams.set('error', 'auth_required');
+      if (pathname === '/join') {
+        const fullJoinPath = request.nextUrl.search ? `/join${request.nextUrl.search}` : '/join';
+        url.search = '';
+        url.searchParams.set('next', fullJoinPath);
+      } else {
+        url.searchParams.set('error', 'auth_required');
+      }
       return NextResponse.redirect(url);
     }
     return supabaseResponse;
@@ -60,6 +69,10 @@ export async function proxy(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
       url.searchParams.set('error', 'email_not_confirmed');
+      if (pathname === '/join') {
+        const fullJoinPath = request.nextUrl.search ? `/join${request.nextUrl.search}` : '/join';
+        url.searchParams.set('next', fullJoinPath);
+      }
       return NextResponse.redirect(url);
     }
     // Allow unconfirmed users to access auth routes (like /signup/check-email or /login)
@@ -89,6 +102,16 @@ export async function proxy(request: NextRequest) {
 
   // Redirect logged-in users away from /login or /signup
   if (pathname === '/login' || pathname === '/signup') {
+    const next = request.nextUrl.searchParams.get('next');
+    if (next && next.startsWith('/') && !next.startsWith('//')) {
+      const isTeacherTarget = next.startsWith('/teacher');
+      if (role === 'teacher' && isTeacherTarget) {
+        return NextResponse.redirect(new URL(next, request.url));
+      }
+      if (role === 'student' && !isTeacherTarget) {
+        return NextResponse.redirect(new URL(next, request.url));
+      }
+    }
     const url = request.nextUrl.clone();
     url.pathname = role === 'teacher' ? '/teacher/exams' : '/exams';
     return NextResponse.redirect(url);
@@ -104,7 +127,7 @@ export async function proxy(request: NextRequest) {
 
   if (isStudentRoute && role !== 'student') {
     const url = request.nextUrl.clone();
-    url.pathname = '/teacher/exams';
+    url.pathname = '/teacher/classes';
     url.searchParams.set('error', 'student_required');
     return NextResponse.redirect(url);
   }

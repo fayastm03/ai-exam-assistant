@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   Loader2,
   FileText,
+  Users,
 } from 'lucide-react';
 
 interface ExamData {
@@ -56,6 +57,7 @@ export default function StudentExamInstructionsPage({
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [membershipDeniedMsg, setMembershipDeniedMsg] = useState<string | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -65,6 +67,13 @@ export default function StudentExamInstructionsPage({
         const res = await fetch(`/api/student/exams/${examId}`, { cache: 'no-store' });
         const data = await res.json();
         if (!ignore) {
+          if (res.status === 403) {
+            setMembershipDeniedMsg(
+              data.message ||
+                'Access denied: You must be an approved member of a class assigned to this exam.'
+            );
+            return;
+          }
           if (!res.ok) throw new Error(data.message || 'Failed to load exam details');
           setExam(data.exam);
           setAttempt(data.attempt);
@@ -91,12 +100,22 @@ export default function StudentExamInstructionsPage({
   const handleStartExam = async () => {
     setStarting(true);
     setErrorMsg(null);
+    setMembershipDeniedMsg(null);
 
     try {
       const res = await fetch(`/api/student/exams/${examId}/start`, {
         method: 'POST',
       });
       const data = await res.json();
+
+      if (res.status === 403) {
+        setMembershipDeniedMsg(
+          data.message ||
+            'Access denied: You must be an approved member of a class assigned to this exam. Your membership may have been removed or is pending approval.'
+        );
+        setStarting(false);
+        return;
+      }
 
       if (!res.ok) {
         throw new Error(data.message || 'Failed to start exam');
@@ -119,6 +138,52 @@ export default function StudentExamInstructionsPage({
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-3">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
         <p className="text-sm text-neutral-500">Loading instructions...</p>
+      </div>
+    );
+  }
+
+  if (membershipDeniedMsg && !exam) {
+    return (
+      <div className="max-w-xl mx-auto space-y-4">
+        <Link
+          href="/exams"
+          className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-xs h-8')}
+        >
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Back to Available Exams
+        </Link>
+        <Card className="border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <CardTitle className="text-base font-semibold">Class Membership Required</CardTitle>
+            </div>
+            <CardDescription className="text-xs text-amber-800/90 dark:text-amber-300/80 pt-1 leading-relaxed">
+              {membershipDeniedMsg}
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="pt-2 flex flex-col sm:flex-row gap-2">
+            <Link
+              href="/classes"
+              className={cn(
+                buttonVariants({ variant: 'default', size: 'sm' }),
+                'w-full sm:w-auto text-xs bg-amber-600 hover:bg-amber-700 text-white'
+              )}
+            >
+              <Users className="w-3.5 h-3.5 mr-1.5" />
+              View My Classes
+            </Link>
+            <Link
+              href="/exams"
+              className={cn(
+                buttonVariants({ variant: 'outline', size: 'sm' }),
+                'w-full sm:w-auto text-xs'
+              )}
+            >
+              Back to Exams
+            </Link>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
@@ -247,6 +312,28 @@ export default function StudentExamInstructionsPage({
               </li>
             </ul>
           </div>
+
+          {/* Membership Denied 403 Alert */}
+          {membershipDeniedMsg && (
+            <Alert className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100 py-3">
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <div className="space-y-1.5">
+                <AlertTitle className="text-xs font-semibold">Class Membership Notice</AlertTitle>
+                <AlertDescription className="text-xs">
+                  {membershipDeniedMsg}
+                </AlertDescription>
+                <div className="pt-1">
+                  <Link
+                    href="/classes"
+                    className="text-xs font-semibold text-amber-800 dark:text-amber-300 hover:underline inline-flex items-center"
+                  >
+                    <Users className="w-3 h-3 mr-1" />
+                    Check My Classes status
+                  </Link>
+                </div>
+              </div>
+            </Alert>
+          )}
 
           {/* Notice on already submitted */}
           {isSubmitted && (

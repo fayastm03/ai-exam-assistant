@@ -12,6 +12,7 @@ import { Mail, CheckCircle2, AlertCircle, Loader2, ArrowLeft, RefreshCw } from '
 function CheckEmailContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || '';
+  const next = searchParams.get('next');
 
   const [resending, setResending] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -32,11 +33,15 @@ function CheckEmailContent() {
       const supabase = createClient();
       const origin = window.location.origin;
 
+      const callbackUrl = next
+        ? `${origin}/auth/callback?next=${encodeURIComponent(next)}`
+        : `${origin}/auth/callback`;
+
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: email.trim(),
         options: {
-          emailRedirectTo: `${origin}/auth/callback`,
+          emailRedirectTo: callbackUrl,
         },
       });
 
@@ -132,7 +137,7 @@ function CheckEmailContent() {
 
       <CardFooter className="flex justify-center border-t border-neutral-100 dark:border-neutral-900 pt-3">
         <Link
-          href="/login"
+          href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}
           className="text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 flex items-center gap-1 font-medium"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In

@@ -68,6 +68,22 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return jsonError(membersError.message, 500);
   }
 
+  // Fetch emails for these students via service role admin API
+  const studentIds = Array.from(new Set((members || []).map((m) => m.student_id)));
+  const emailMap = new Map<string, string>();
+  await Promise.all(
+    studentIds.map(async (sid) => {
+      try {
+        const { data: userData } = await supabase.auth.admin.getUserById(sid);
+        if (userData?.user?.email) {
+          emailMap.set(sid, userData.user.email);
+        }
+      } catch {
+        // ignore individual lookup error
+      }
+    })
+  );
+
   const formatted = (members || []).map((m) => {
     const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
     return {
@@ -75,6 +91,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       class_id: m.class_id,
       student_id: m.student_id,
       student_name: profile?.name || 'Unknown Student',
+      student_email: emailMap.get(m.student_id) || '',
       status: m.status,
       requested_at: m.requested_at,
       decided_at: m.decided_at,

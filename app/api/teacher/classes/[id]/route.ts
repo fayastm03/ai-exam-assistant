@@ -30,7 +30,27 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return jsonError('Class not found or access denied', 404);
   }
 
-  return jsonSuccess({ class: cls });
+  // Fetch exams assigned to this class
+  const { data: examAssignments } = await supabase
+    .from('exam_classes')
+    .select(`
+      exam_id,
+      exams:exam_id (
+        id,
+        title,
+        status,
+        duration_min,
+        open_at,
+        close_at
+      )
+    `)
+    .eq('class_id', id);
+
+  const exams = (examAssignments || [])
+    .map((ea) => (Array.isArray(ea.exams) ? ea.exams[0] : ea.exams))
+    .filter(Boolean);
+
+  return jsonSuccess({ class: cls, exams });
 }
 
 /**

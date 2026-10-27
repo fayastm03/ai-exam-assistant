@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Settings, Save, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Settings, Save, AlertCircle, CheckCircle2, Loader2, Users, Plus } from 'lucide-react';
 
 interface ExamData {
   id: string;
@@ -21,6 +23,14 @@ interface ExamData {
   status: 'draft' | 'published' | 'closed';
   created_at?: string;
   updated_at?: string;
+}
+
+interface TeacherClass {
+  id: string;
+  name: string;
+  join_code: string;
+  approved_count: number;
+  pending_count: number;
 }
 
 interface ExamSettingsTabProps {
@@ -46,9 +56,68 @@ export function ExamSettingsTab({ exam, onExamUpdated }: ExamSettingsTabProps) {
   const [openAt, setOpenAt] = useState(formatForInput(exam.open_at));
   const [closeAt, setCloseAt] = useState(formatForInput(exam.close_at));
 
+  // Classes multi-select state
+  const [availableClasses, setAvailableClasses] = useState<TeacherClass[]>([]);
+  const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
+  const [classesLoading, setClassesLoading] = useState(true);
+
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Load teacher's classes and currently assigned classes
+  useEffect(() => {
+    let ignore = false;
+
+    async function load() {
+      try {
+        const [classesRes, assignedRes] = await Promise.all([
+          fetch('/api/teacher/classes'),
+          fetch(`/api/teacher/exams/${exam.id}/classes`),
+        ]);
+
+        const classesData = await classesRes.json();
+        const assignedData = await assignedRes.json();
+
+        if (!ignore) {
+          if (classesRes.ok && classesData.classes) {
+            setAvailableClasses(classesData.classes);
+          }
+          if (assignedRes.ok && assignedData.class_ids) {
+            setSelectedClassIds(assignedData.class_ids);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load class assignment data:', err);
+      } finally {
+        if (!ignore) {
+          setClassesLoading(false);
+        }
+      }
+    }
+
+    load();
+
+    return () => {
+      ignore = true;
+    };
+  }, [exam.id]);
+
+  const toggleClassSelection = (classId: string) => {
+    setSelectedClassIds((prev) =>
+      prev.includes(classId)
+        ? prev.filter((id) => id !== classId)
+        : [...prev, classId]
+    );
+  };
+
+  const handleSelectAllClasses = () => {
+    if (selectedClassIds.length === availableClasses.length) {
+      setSelectedClassIds([]);
+    } else {
+      setSelectedClassIds(availableClasses.map((c) => c.id));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +159,8 @@ export function ExamSettingsTab({ exam, onExamUpdated }: ExamSettingsTabProps) {
     setSaving(true);
 
     try {
-      const res = await fetch(`/api/teacher/exams/${exam.id}`, {
+      // 1. Update general exam settings
+      const examRes = await fetch(`/api/teacher/exams/${exam.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -104,13 +174,25 @@ export function ExamSettingsTab({ exam, onExamUpdated }: ExamSettingsTabProps) {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Failed to update exam settings');
+      const examData = await examRes.json();
+      if (!examRes.ok) {
+        throw new Error(examData.message || 'Failed to update exam settings');
       }
 
-      setSuccessMsg('Exam settings saved successfully.');
-      onExamUpdated(data.exam);
+      // 2. Update assigned classes
+      const classesRes = await fetch(`/api/teacher/exams/${exam.id}/classes`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ class_ids: selectedClassIds }),
+      });
+
+      const classesData = await classesRes.json();
+      if (!classesRes.ok) {
+        throw new Error(classesData.message || 'Failed to update class assignments');
+      }
+
+      setSuccessMsg('Exam settings and class assignments saved successfully.');
+      onExamUpdated(examData.exam);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Error updating settings');
     } finally {
@@ -126,23 +208,23 @@ export function ExamSettingsTab({ exam, onExamUpdated }: ExamSettingsTabProps) {
           Exam Configuration
         </CardTitle>
         <CardDescription className="text-xs">
-          Configure title, instructions, time duration, scheduling windows, and scoring policies.
+          Configure title, instructions, time duration, class assignments, and scheduling windows.
         </CardDescription>
       </CardHeader>
 
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5">
           {errorMsg && (
             <Alert variant="destructive" className="py-2.5">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs">{errorMsg}</AlertDescription>
+              <AlertDescription className="text-xs ml-2">{errorMsg}</AlertDescription>
             </Alert>
           )}
 
           {successMsg && (
             <Alert className="py-2.5 border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              <AlertDescription className="text-xs">{successMsg}</AlertDescription>
+              <AlertDescription className="text-xs ml-2">{successMsg}</AlertDescription>
             </Alert>
           )}
 
@@ -155,6 +237,105 @@ export function ExamSettingsTab({ exam, onExamUpdated }: ExamSettingsTabProps) {
               required
               disabled={saving}
             />
+          </div>
+
+          {/* Classes Multi-Select Section */}
+          <div className="space-y-2.5 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-blue-600" />
+                <Label className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                  Assigned Classes *
+                </Label>
+                <Badge
+                  variant={selectedClassIds.length > 0 ? 'default' : 'destructive'}
+                  className="text-[11px] h-5"
+                >
+                  {selectedClassIds.length} Selected
+                </Badge>
+              </div>
+
+              {availableClasses.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleSelectAllClasses}
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium text-left"
+                >
+                  {selectedClassIds.length === availableClasses.length
+                    ? 'Deselect All'
+                    : 'Select All Classes'}
+                </button>
+              )}
+            </div>
+
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Choose which of your classes can access and take this exam. An exam must be assigned to at least one class to be published.
+            </p>
+
+            {classesLoading ? (
+              <div className="flex items-center gap-2 py-4 text-xs text-neutral-500">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Loading your classes...
+              </div>
+            ) : availableClasses.length === 0 ? (
+              <div className="p-3.5 rounded-lg border border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 text-xs text-amber-800 dark:text-amber-300 space-y-2">
+                <p className="font-medium">You haven&apos;t created any classes yet.</p>
+                <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                  You must create at least one class before students can take this exam.
+                </p>
+                <Link
+                  href="/teacher/classes"
+                  className={buttonVariants({ variant: 'outline', size: 'sm', className: 'h-7 text-xs border-amber-300' })}
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  Create a Class
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                {availableClasses.map((cls) => {
+                  const isChecked = selectedClassIds.includes(cls.id);
+
+                  return (
+                    <label
+                      key={cls.id}
+                      className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                        isChecked
+                          ? 'border-blue-600 bg-blue-50/60 dark:bg-blue-950/40 text-blue-950 dark:text-blue-100 ring-1 ring-blue-600/50'
+                          : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100/50 dark:hover:bg-neutral-800/50 text-neutral-800 dark:text-neutral-200'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleClassSelection(cls.id)}
+                        disabled={saving}
+                        className="mt-0.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-semibold text-xs truncate">
+                            {cls.name}
+                          </span>
+                          <span className="font-mono text-[10px] text-neutral-500 shrink-0">
+                            {cls.join_code}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+                          {cls.approved_count} approved student{cls.approved_count === 1 ? '' : 's'}
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
+            {selectedClassIds.length === 0 && availableClasses.length > 0 && (
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium pt-1">
+                ⚠️ Notice: No class is currently selected. Publishing will be blocked until at least one class is assigned.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -260,4 +441,3 @@ export function ExamSettingsTab({ exam, onExamUpdated }: ExamSettingsTabProps) {
     </Card>
   );
 }
-

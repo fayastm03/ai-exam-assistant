@@ -101,6 +101,26 @@ export default function TeacherExamResultsPage({
   const [selectedAttemptId, setSelectedAttemptId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Class filter state
+  const [selectedClassId, setSelectedClassId] = useState<string>('all');
+  const [assignedClasses, setAssignedClasses] = useState<{ id: string; name: string }[]>([]);
+
+  // Fetch assigned classes for this exam to populate the class filter
+  useEffect(() => {
+    async function loadAssignedClasses() {
+      try {
+        const res = await fetch(`/api/teacher/exams/${examId}/classes`);
+        const json = await res.json();
+        if (res.ok && json.classes) {
+          setAssignedClasses(json.classes);
+        }
+      } catch (err) {
+        console.error('Failed to load assigned classes:', err);
+      }
+    }
+    loadAssignedClasses();
+  }, [examId]);
+
   const fetchResults = useCallback(() => {
     setLoading(true);
     setRefreshKey((k) => k + 1);
@@ -111,7 +131,12 @@ export default function TeacherExamResultsPage({
 
     async function load() {
       try {
-        const res = await fetch(`/api/teacher/exams/${examId}/results`, {
+        const url =
+          selectedClassId && selectedClassId !== 'all'
+            ? `/api/teacher/exams/${examId}/results?class_id=${encodeURIComponent(selectedClassId)}`
+            : `/api/teacher/exams/${examId}/results`;
+
+        const res = await fetch(url, {
           cache: 'no-store',
         });
         const json = await res.json();
@@ -139,7 +164,7 @@ export default function TeacherExamResultsPage({
     return () => {
       ignore = true;
     };
-  }, [examId, refreshKey]);
+  }, [examId, refreshKey, selectedClassId]);
 
   if (loading) {
     return (
@@ -212,16 +237,36 @@ export default function TeacherExamResultsPage({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          {/* Class Filter Dropdown */}
+          <div className="flex items-center gap-1.5">
+            <label htmlFor="class-filter-select" className="text-xs text-neutral-500 font-medium whitespace-nowrap">
+              Class:
+            </label>
+            <select
+              id="class-filter-select"
+              value={selectedClassId}
+              onChange={(e) => setSelectedClassId(e.target.value)}
+              className="h-8 px-2 text-xs font-medium rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs max-w-[180px] sm:max-w-[220px]"
+            >
+              <option value="all">All Assigned Classes</option>
+              {assignedClasses.map((cls) => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <Button
             variant="outline"
             size="sm"
             onClick={fetchResults}
-            className="text-xs"
+            className="text-xs h-8 shadow-xs"
             disabled={loading}
           >
             <RotateCw className="w-3.5 h-3.5 mr-1.5" />
-            Refresh Data
+            Refresh
           </Button>
         </div>
       </div>

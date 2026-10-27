@@ -2,11 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { GraduationCap, LogOut, BookOpen } from 'lucide-react';
+import { GraduationCap, LogOut, BookOpen, Users } from 'lucide-react';
 
 interface TeacherNavbarProps {
   userName: string;
@@ -15,6 +15,7 @@ interface TeacherNavbarProps {
 
 export function TeacherNavbar({ userName }: TeacherNavbarProps) {
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -22,6 +23,9 @@ export function TeacherNavbar({ userName }: TeacherNavbarProps) {
     router.push('/login');
     router.refresh();
   };
+
+  const isExamsActive = pathname.startsWith('/teacher/exams');
+  const isClassesActive = pathname.startsWith('/teacher/classes');
 
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-200/80 dark:border-neutral-800 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md">
@@ -44,10 +48,25 @@ export function TeacherNavbar({ userName }: TeacherNavbarProps) {
           <nav className="hidden sm:flex items-center gap-1">
             <Link
               href="/teacher/exams"
-              className="px-3 py-1.5 text-sm font-medium rounded-md text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center gap-1.5"
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${
+                isExamsActive
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
+                  : 'text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+              }`}
             >
-              <BookOpen className="w-4 h-4 text-neutral-500" />
-              My Exams
+              <BookOpen className="w-4 h-4" />
+              Exams
+            </Link>
+            <Link
+              href="/teacher/classes"
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex items-center gap-1.5 ${
+                isClassesActive
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
+                  : 'text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Classes
             </Link>
           </nav>
         </div>
@@ -74,7 +93,32 @@ export function TeacherNavbar({ userName }: TeacherNavbarProps) {
           </Button>
         </div>
       </div>
+
+      {/* Mobile navigation row */}
+      <div className="sm:hidden flex items-center border-t border-neutral-200 dark:border-neutral-800 px-4 py-2 gap-2 bg-neutral-50/50 dark:bg-neutral-900/50">
+        <Link
+          href="/teacher/exams"
+          className={`flex-1 py-1.5 text-xs font-medium rounded-md text-center transition-colors flex items-center justify-center gap-1.5 ${
+            isExamsActive
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700'
+          }`}
+        >
+          <BookOpen className="w-3.5 h-3.5" />
+          Exams
+        </Link>
+        <Link
+          href="/teacher/classes"
+          className={`flex-1 py-1.5 text-xs font-medium rounded-md text-center transition-colors flex items-center justify-center gap-1.5 ${
+            isClassesActive
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          Classes
+        </Link>
+      </div>
     </header>
   );
 }
-

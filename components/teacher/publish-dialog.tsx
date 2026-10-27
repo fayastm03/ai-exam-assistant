@@ -112,8 +112,8 @@ export function PublishButtonWithDialog({
               <AlertCircle className="h-4 w-4" />
               <AlertTitle className="text-xs font-semibold">Publish Checklist Requirements:</AlertTitle>
               <AlertDescription className="text-xs mt-1">
-                The platform requires that an exam has a positive duration, at least 1 question, and each question has
-                2+ options with a valid matching correct answer.
+                The platform requires that an exam has a positive duration, at least 1 question, each question has
+                2+ options with a valid matching correct answer, and is assigned to at least one class.
               </AlertDescription>
             </Alert>
 

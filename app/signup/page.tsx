@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AppMessage } from '@/components/ui/app-message';
-import { GraduationCap, Loader2, ArrowRight } from 'lucide-react';
+import { GraduationCap, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { mapAuthError, type UserMessage, MESSAGES } from '@/lib/messages';
 
@@ -25,6 +25,7 @@ function StudentSignupForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{
     name?: string;
     email?: string;
@@ -204,26 +205,37 @@ function StudentSignupForm() {
               <Label htmlFor="signup-password" className="text-sm font-medium">
                 Password
               </Label>
-              <Input
-                ref={passwordInputRef}
-                id="signup-password"
-                type="password"
-                placeholder="At least 8 letters & numbers"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (fieldErrors.password) {
-                    setFieldErrors((prev) => ({ ...prev, password: undefined }));
-                  }
-                }}
-                disabled={loading}
-                autoComplete="new-password"
-                aria-invalid={!!fieldErrors.password}
-                className={cn(
-                  'h-10 text-base rounded-lg',
-                  fieldErrors.password && 'border-destructive focus-visible:ring-destructive'
-                )}
-              />
+              <div className="relative">
+                <Input
+                  ref={passwordInputRef}
+                  id="signup-password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="At least 8 letters & numbers"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (fieldErrors.password) {
+                      setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                    }
+                  }}
+                  disabled={loading}
+                  autoComplete="new-password"
+                  aria-invalid={!!fieldErrors.password}
+                  className={cn(
+                    'h-10 text-base rounded-lg pr-10',
+                    fieldErrors.password && 'border-destructive focus-visible:ring-destructive'
+                  )}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  disabled={loading}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               {fieldErrors.password ? (
                 <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
               ) : (

@@ -296,6 +296,45 @@ export function mapAuthError(error: unknown): UserMessage {
     return MESSAGES.auth.passwordWeak;
   }
 
+  // New password same as old password
+  if (
+    lower.includes('different from') ||
+    lower.includes('should be different') ||
+    lower.includes('same password') ||
+    lower.includes('same as old')
+  ) {
+    return {
+      type: 'error',
+      message:
+        'Your new password must be different from your previous password. Please choose a different password.',
+    };
+  }
+
+  // Session missing or expired
+  if (
+    lower.includes('session missing') ||
+    lower.includes('not logged in') ||
+    lower.includes('not authenticated') ||
+    lower.includes('auth session missing') ||
+    lower.includes('user not found')
+  ) {
+    return MESSAGES.auth.linkExpiredOrUsed;
+  }
+
+  // Common or compromised password
+  if (
+    lower.includes('common') ||
+    lower.includes('breached') ||
+    lower.includes('compromised') ||
+    lower.includes('pwned')
+  ) {
+    return {
+      type: 'error',
+      message:
+        'This password is too easy to guess. Please choose a stronger, unique password.',
+    };
+  }
+
   // Fallback: log raw detail and return safe unexpected error with reference ID
   const refId = generateReferenceId();
   if (typeof console !== 'undefined') {

@@ -53,6 +53,18 @@ describe('Centralized Messages System (lib/messages.ts)', () => {
       );
     });
 
+    it('maps new password same as old password to clear user guidance', () => {
+      const msg = mapAuthError(new Error('New password should be different from the old password.'));
+      expect(msg.type).toBe('error');
+      expect(msg.message).toContain('Your new password must be different from your previous password');
+    });
+
+    it('maps missing auth session to expired link message', () => {
+      const msg = mapAuthError(new Error('Auth session missing!'));
+      expect(msg.type).toBe('error');
+      expect(msg.message).toContain('This link has expired or has already been used');
+    });
+
     it('returns an unexpected error with a reference ID for unknown auth errors', () => {
       const msg = mapAuthError(new Error('Unknown DB connection reset'));
       expect(msg.type).toBe('error');

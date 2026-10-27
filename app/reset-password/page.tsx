@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AppMessage } from '@/components/ui/app-message';
-import { GraduationCap, ArrowLeft, Loader2 } from 'lucide-react';
+import { GraduationCap, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { mapAuthError, type UserMessage, MESSAGES } from '@/lib/messages';
 
@@ -21,6 +21,8 @@ export default function ResetPasswordPage() {
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{
     password?: string;
     confirmPassword?: string;
@@ -211,26 +213,37 @@ export default function ResetPasswordPage() {
               <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                 <div className="space-y-1.5">
                   <Label htmlFor="new-password" className="text-sm font-medium">New Password</Label>
-                  <Input
-                    ref={passwordInputRef}
-                    id="new-password"
-                    type="password"
-                    placeholder="At least 8 letters & numbers"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      if (fieldErrors.password) {
-                        setFieldErrors((prev) => ({ ...prev, password: undefined }));
-                      }
-                    }}
-                    autoComplete="new-password"
-                    disabled={loading}
-                    aria-invalid={!!fieldErrors.password}
-                    className={cn(
-                      'h-10 text-base rounded-lg',
-                      fieldErrors.password && 'border-destructive focus-visible:ring-destructive'
-                    )}
-                  />
+                  <div className="relative">
+                    <Input
+                      ref={passwordInputRef}
+                      id="new-password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="At least 8 letters & numbers"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (fieldErrors.password) {
+                          setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                        }
+                      }}
+                      autoComplete="new-password"
+                      disabled={loading}
+                      aria-invalid={!!fieldErrors.password}
+                      className={cn(
+                        'h-10 text-base rounded-lg pr-10',
+                        fieldErrors.password && 'border-destructive focus-visible:ring-destructive'
+                      )}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      disabled={loading}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                   {fieldErrors.password ? (
                     <p className="text-xs text-destructive mt-1">
                       {fieldErrors.password}
@@ -244,26 +257,37 @@ export default function ResetPasswordPage() {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="confirm-new-password" className="text-sm font-medium">Confirm New Password</Label>
-                  <Input
-                    ref={confirmPasswordInputRef}
-                    id="confirm-new-password"
-                    type="password"
-                    placeholder="Repeat new password"
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      if (fieldErrors.confirmPassword) {
-                        setFieldErrors((prev) => ({ ...prev, confirmPassword: undefined }));
-                      }
-                    }}
-                    autoComplete="new-password"
-                    disabled={loading}
-                    aria-invalid={!!fieldErrors.confirmPassword}
-                    className={cn(
-                      'h-10 text-base rounded-lg',
-                      fieldErrors.confirmPassword && 'border-destructive focus-visible:ring-destructive'
-                    )}
-                  />
+                  <div className="relative">
+                    <Input
+                      ref={confirmPasswordInputRef}
+                      id="confirm-new-password"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="Repeat new password"
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        if (fieldErrors.confirmPassword) {
+                          setFieldErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+                        }
+                      }}
+                      autoComplete="new-password"
+                      disabled={loading}
+                      aria-invalid={!!fieldErrors.confirmPassword}
+                      className={cn(
+                        'h-10 text-base rounded-lg pr-10',
+                        fieldErrors.confirmPassword && 'border-destructive focus-visible:ring-destructive'
+                      )}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      disabled={loading}
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1 transition-colors rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                   {fieldErrors.confirmPassword && (
                     <p className="text-xs text-destructive mt-1">
                       {fieldErrors.confirmPassword}

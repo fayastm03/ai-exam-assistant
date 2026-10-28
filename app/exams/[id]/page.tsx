@@ -98,6 +98,11 @@ export default function ExamInstructionsPage({
   }, [examId]);
 
   const handleStartExam = async () => {
+    // Request fullscreen during user gesture
+    if (typeof document !== 'undefined' && document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+
     setStarting(true);
     setErrorMsg(null);
     setMembershipDeniedMsg(null);

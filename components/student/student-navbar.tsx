@@ -19,6 +19,11 @@ export function StudentNavbar({ userName }: StudentNavbarProps) {
   const [signingOut, setSigningOut] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
+  // When taking an exam, hide navbar completely for full-screen distraction-free exam mode
+  if (pathname.includes('/take')) {
+    return null;
+  }
+
   const handleSignOut = async () => {
     if (signingOut) return;
     setSigningOut(true);

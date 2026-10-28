@@ -27,9 +27,11 @@ import {
   AlertTriangle,
   LayoutGrid,
   WifiOff,
+  Maximize2,
+  ShieldAlert,
 } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { cn } from '@/lib/utils';
 import { mapApiError, MESSAGES } from '@/lib/messages';
 
 interface QuestionItem {
@@ -95,25 +97,126 @@ export default function StudentExamTakePage({
   // Mobile Question Palette Drawer
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
 
-  // Leave & Back Button Protection
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const allowNavigationRef = useRef(false);
+  // Unified Exam Security & Interruption Lockdown
+  const [isFullscreen, setIsFullscreen] = useState(true);
+  const [securityModalOpen, setSecurityModalOpen] = useState(false);
+  const [securityModalReason, setSecurityModalReason] = useState<
+    'back' | 'tab_switch' | 'desktop_switch' | 'fullscreen_exit'
+  >('back');
+  const [securityViolationCount, setSecurityViolationCount] = useState(0);
+  const [autoSubmitReason, setAutoSubmitReason] = useState<'time_expired' | 'violations_exceeded'>('time_expired');
 
-  const handleConfirmExit = () => {
-    allowNavigationRef.current = true;
-    setShowExitConfirm(false);
-    router.replace('/exams');
-  };
+  const enterFullscreen = useCallback(() => {
+    if (typeof document !== 'undefined') {
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(() => {});
+      }
+    }
+  }, []);
+
+  const allowNavigationRef = useRef(false);
 
   // Online/Offline & Auto-Retry Status (Edge Case 28)
   const [isOnline, setIsOnline] = useState<boolean>(
     () => (typeof window !== 'undefined' ? navigator.onLine : true)
   );
 
+  // Trigger Security Alert & Lock Screen (Auto-submits if violations exceed 3)
+  const triggerSecurityAlert = useCallback(
+    (reason: 'back' | 'tab_switch' | 'desktop_switch' | 'fullscreen_exit') => {
+      if (allowNavigationRef.current) return;
+      setSecurityViolationCount((prev) => {
+        const next = prev + 1;
+        if (next > 3) {
+          // More than three violations: auto-submit immediately!
+          setSecurityModalOpen(false);
+          setAutoSubmitReason('violations_exceeded');
+          handleSubmitExamRef.current?.(true);
+          return next;
+        }
+        setSecurityModalReason(reason);
+        setSecurityModalOpen(true);
+        return next;
+      });
+    },
+    []
+  );
+
+  // Fullscreen, Tab Switch, Desktop Switch, and Shortcut Protections
+  useEffect(() => {
+    // Attempt fullscreen immediately on mount
+    enterFullscreen();
+
+    const handleFullscreenChange = () => {
+      const inFs = Boolean(document.fullscreenElement);
+      setIsFullscreen(inFs);
+      if (!inFs && !allowNavigationRef.current) {
+        triggerSecurityAlert('fullscreen_exit');
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && !allowNavigationRef.current) {
+        triggerSecurityAlert('tab_switch');
+      }
+    };
+
+    // Detect switching desktops (Mission Control / 3-finger swipe) or switching active apps
+    const handleWindowBlur = () => {
+      if (!allowNavigationRef.current) {
+        triggerSecurityAlert('desktop_switch');
+      }
+    };
+
+    const handlePreventCopy = (e: Event) => {
+      e.preventDefault();
+      toast.error('Copying or pasting is disabled for exam integrity.');
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      // Block browser close/reload/tab/app shortcuts: Cmd/Ctrl + W, R, T, N, Q, M, C, V, U, P, S, A
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        ['w', 'r', 't', 'n', 'q', 'm', 'c', 'v', 'u', 'p', 's', 'a'].includes(key)
+      ) {
+        e.preventDefault();
+        triggerSecurityAlert('tab_switch');
+      }
+      // Block F5 (Refresh) and F12 (DevTools)
+      if (e.key === 'F5' || e.key === 'F12') {
+        e.preventDefault();
+        triggerSecurityAlert('tab_switch');
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    document.addEventListener('copy', handlePreventCopy);
+    document.addEventListener('cut', handlePreventCopy);
+    document.addEventListener('paste', handlePreventCopy);
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Initial check
+    setIsFullscreen(Boolean(document.fullscreenElement));
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      document.removeEventListener('copy', handlePreventCopy);
+      document.removeEventListener('cut', handlePreventCopy);
+      document.removeEventListener('paste', handlePreventCopy);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [enterFullscreen, triggerSecurityAlert]);
+
   // Trap Browser Back Button and Window Unload (mounts immediately to prevent back navigation while in exam)
   useEffect(() => {
     allowNavigationRef.current = false;
-    setShowExitConfirm(false);
+    setSecurityModalOpen(false);
 
     // Push dummy state so browser back button triggers popstate without leaving
     try {
@@ -128,7 +231,7 @@ export default function StudentExamTakePage({
       try {
         window.history.pushState({ examTake: true }, '', window.location.href);
       } catch {}
-      setShowExitConfirm(true);
+      triggerSecurityAlert('back');
     };
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -145,7 +248,7 @@ export default function StudentExamTakePage({
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []);
+  }, [triggerSecurityAlert]);
 
   // Load Exam and Existing Attempt Session
   useEffect(() => {
@@ -164,8 +267,11 @@ export default function StudentExamTakePage({
           }
 
           if (data.alreadySubmitted) {
+            if (typeof document !== 'undefined' && document.fullscreenElement) {
+              document.exitFullscreen().catch(() => {});
+            }
             allowNavigationRef.current = true;
-            router.replace(`/exams/${examId}/result`);
+            router.replace('/exams');
             return;
           }
 
@@ -247,8 +353,12 @@ export default function StudentExamTakePage({
           }
         }
 
+        if (typeof document !== 'undefined' && document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+
         allowNavigationRef.current = true;
-        router.replace(`/exams/${examId}/result`);
+        router.replace('/exams');
       } catch (err: unknown) {
         if (!isAutoSubmit) {
           toast.error(mapApiError(err, 'Failed to submit exam. Please try again.').message);
@@ -274,8 +384,12 @@ export default function StudentExamTakePage({
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === `exam_submitted_${examId}`) {
+        if (typeof document !== 'undefined' && document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+
         allowNavigationRef.current = true;
-        router.replace(`/exams/${examId}/result`);
+        router.replace('/exams');
       }
     };
 
@@ -345,8 +459,11 @@ export default function StudentExamTakePage({
 
         if (data.alreadySubmitted) {
           // Exam was submitted from another tab or window
+          if (typeof document !== 'undefined' && document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+          }
           allowNavigationRef.current = true;
-          router.replace(`/exams/${examId}/result`);
+          router.replace('/exams');
           return;
         }
 
@@ -485,13 +602,63 @@ export default function StudentExamTakePage({
   const flaggedCount = flagged.size;
 
   return (
-    <div className="space-y-4 max-w-6xl mx-auto pb-12">
+    <div
+      onContextMenu={(e) => e.preventDefault()}
+      className="space-y-4 max-w-6xl mx-auto pb-12 select-none"
+    >
+      {/* Fullscreen Required Lock Screen */}
+      {!isFullscreen && (
+        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center select-none">
+          <div className="max-w-md w-full p-6 sm:p-8 rounded-2xl border border-border bg-card shadow-2xl space-y-5 animate-in fade-in-50 zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <Maximize2 className="w-6 h-6" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold tracking-tight text-foreground">
+                Fullscreen Exam Mode Required
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                For exam integrity and distraction-free testing, this examination must be taken in full-screen mode with all other applications hidden.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2.5 pt-2">
+              <Button
+                type="button"
+                onClick={enterFullscreen}
+                className="w-full h-11 text-sm font-semibold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-md cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Maximize2 className="w-4 h-4" />
+                Enter Fullscreen to Continue
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => handleSubmitExam(false)}
+                disabled={submittingManual}
+                className="w-full h-10 text-xs font-semibold rounded-lg cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Submit & Finish Exam
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Auto-Submitting Full Screen Overlay */}
       {autoSubmitting && (
         <div className="fixed inset-0 z-50 bg-neutral-900/80 backdrop-blur-sm flex flex-col items-center justify-center text-white space-y-3">
           <Loader2 className="w-10 h-10 animate-spin text-amber-400" />
-          <h2 className="text-xl font-bold">Time Expired — Submitting Exam</h2>
-          <p className="text-sm text-neutral-300">Evaluating your answers, please wait...</p>
+          <h2 className="text-xl font-bold">
+            {autoSubmitReason === 'violations_exceeded'
+              ? 'Security Limit Exceeded — Auto-Submitting Exam'
+              : 'Time Expired — Submitting Exam'}
+          </h2>
+          <p className="text-sm text-neutral-300">
+            {autoSubmitReason === 'violations_exceeded'
+              ? 'More than 3 security violations detected. Submitting your current answers...'
+              : 'Evaluating your answers, please wait...'}
+          </p>
         </div>
       )}
 
@@ -522,23 +689,29 @@ export default function StudentExamTakePage({
       )}
 
       {/* Top Test Header Bar */}
-      <div className="sticky top-16 z-30 bg-card/95 backdrop-blur-md border border-border rounded-lg p-3 sm:p-4 shadow-sm flex items-center justify-between gap-3">
+      <div className="sticky top-2 sm:top-4 z-30 bg-card/95 backdrop-blur-md border border-border rounded-lg p-3 sm:p-4 shadow-sm flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowExitConfirm(true)}
+            onClick={() => triggerSecurityAlert('back')}
             className="text-muted-foreground hover:text-foreground h-9 px-2 gap-1 rounded-lg text-xs shrink-0 cursor-pointer"
-            title="Leave exam"
+            title="Submit or Continue"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Exit</span>
+            <span className="hidden sm:inline">Exit / Submit</span>
           </Button>
 
           <div className="hidden sm:block">
-            <h1 className="text-sm font-semibold text-foreground line-clamp-1">
-              {exam.title}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-semibold text-foreground line-clamp-1">
+                {exam.title}
+              </h1>
+              <Badge variant="outline" className="text-[10px] py-0 h-4 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 gap-1 inline-flex items-center">
+                <ShieldAlert className="w-3 h-3" />
+                <span>Protected</span>
+              </Badge>
+            </div>
             <p className="text-xs text-muted-foreground">
               Question {currentIndex + 1} of {questions.length}
             </p>
@@ -944,17 +1117,140 @@ export default function StudentExamTakePage({
         </DialogContent>
       </Dialog>
 
-      {/* Confirmation Dialog: Leave / Back from Exam */}
-      <ConfirmDialog
-        open={showExitConfirm}
-        onOpenChange={setShowExitConfirm}
-        title="Leave this exam?"
-        description="Your selected answers are saved on the server. However, your countdown timer will continue running in the background. You can return and resume any time before time runs out."
-        confirmText="Leave Exam"
-        cancelText="Stay & Continue Test"
-        variant="warning"
-        onConfirm={handleConfirmExit}
-      />
+      {/* Unified Exam Security Alert Dialog (Only 2 Options: Continue Exam OR Submit & Exit) */}
+      <Dialog
+        open={securityModalOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSecurityModalOpen(false);
+            enterFullscreen();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md rounded-2xl" showCloseButton={false}>
+          <DialogHeader>
+            <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-1 mx-auto sm:mx-0">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <DialogTitle className="text-lg font-bold text-foreground">
+              {securityModalReason === 'back'
+                ? 'Exam Interruption Attempted'
+                : securityModalReason === 'tab_switch'
+                ? 'Security Warning: Tab Switch Detected'
+                : securityModalReason === 'desktop_switch'
+                ? 'Security Warning: Desktop / Window Switched'
+                : 'Security Warning: Fullscreen Mode Exited'}
+            </DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed pt-1">
+              {securityModalReason === 'back'
+                ? 'Leaving or navigating away from the exam is not permitted. To preserve test integrity, you must either submit your exam or continue testing.'
+                : `Leaving the exam screen, changing desktops, or opening another application is strictly prohibited (Security violations: ${securityViolationCount} of 3). You must either submit your exam now or continue testing.`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Violation Strike Counter & Auto-Submit Hint */}
+          <div
+            className={cn(
+              'p-2.5 rounded-lg border text-xs flex items-center justify-between gap-2',
+              securityViolationCount >= 3
+                ? 'bg-destructive/10 border-destructive/30 text-destructive'
+                : 'bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300'
+            )}
+          >
+            <div className="flex items-center gap-1.5 font-medium">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              <span>
+                {securityViolationCount >= 3 ? (
+                  <strong>Final Warning (Strike 3 of 3):</strong>
+                ) : (
+                  <strong>Strike {securityViolationCount} of 3:</strong>
+                )}{' '}
+                If you violate more than 3 times, your exam will automatically submit.
+              </span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {[1, 2, 3].map((step) => (
+                <span
+                  key={step}
+                  className={cn(
+                    'w-2 h-2 rounded-full transition-colors',
+                    step <= securityViolationCount
+                      ? securityViolationCount >= 3
+                        ? 'bg-destructive'
+                        : 'bg-amber-500'
+                      : 'bg-muted-foreground/30'
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3 py-2 text-xs">
+            <div className="grid grid-cols-3 gap-2.5 text-center">
+              <div className="p-2.5 bg-secondary rounded-lg">
+                <div className="text-base font-semibold text-foreground">{questions.length}</div>
+                <div className="text-[11px] text-muted-foreground">Total</div>
+              </div>
+              <div className="p-2.5 bg-emerald-500/10 rounded-lg">
+                <div className="text-base font-semibold text-emerald-600 dark:text-emerald-400">
+                  {answeredCount}
+                </div>
+                <div className="text-[11px] text-muted-foreground">Answered</div>
+              </div>
+              <div className="p-2.5 bg-amber-500/10 rounded-lg">
+                <div className="text-base font-semibold text-amber-600 dark:text-amber-400">
+                  {unansweredCount}
+                </div>
+                <div className="text-[11px] text-muted-foreground">Unanswered</div>
+              </div>
+            </div>
+
+            {unansweredCount > 0 && (
+              <p className="text-[11px] text-amber-800 dark:text-amber-300 bg-amber-500/10 border border-amber-400/40 p-2.5 rounded-lg">
+                ⚠️ You have <strong>{unansweredCount} unanswered</strong> question{unansweredCount === 1 ? '' : 's'}. If you choose to submit now, unanswered questions will receive 0 marks.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter className="flex flex-col sm:flex-col gap-2.5 pt-1">
+            {/* Option 1: Continue Exam */}
+            <Button
+              type="button"
+              onClick={() => {
+                setSecurityModalOpen(false);
+                enterFullscreen();
+              }}
+              className="w-full h-11 text-sm font-semibold rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm cursor-pointer flex items-center justify-center gap-2"
+            >
+              Continue Exam
+            </Button>
+
+            {/* Option 2: Submit & Exit Exam */}
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                setSecurityModalOpen(false);
+                handleSubmitExam(false);
+              }}
+              disabled={submittingManual}
+              className="w-full h-10 text-xs font-semibold rounded-lg cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              {submittingManual ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Submitting Exam...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Submit & Exit Exam</span>
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

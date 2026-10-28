@@ -229,6 +229,11 @@ export default function StudentExamsPage() {
           ) : isInProgress ? (
             <Link
               href={`/exams/${exam.id}/take`}
+              onClick={() => {
+                if (typeof document !== 'undefined' && document.documentElement.requestFullscreen) {
+                  document.documentElement.requestFullscreen().catch(() => {});
+                }
+              }}
               className={cn(
                 buttonVariants({ variant: 'default', size: 'sm' }),
                 'w-full h-9 text-xs rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium'

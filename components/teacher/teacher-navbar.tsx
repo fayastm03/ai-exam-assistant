@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GraduationCap, LogOut, BookOpen, Users, Loader2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface TeacherNavbarProps {
   userName: string;
@@ -16,6 +17,7 @@ interface TeacherNavbarProps {
 export function TeacherNavbar({ userName }: TeacherNavbarProps) {
   const pathname = usePathname();
   const [signingOut, setSigningOut] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -90,7 +92,7 @@ export function TeacherNavbar({ userName }: TeacherNavbarProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleSignOut}
+            onClick={() => setShowSignOutConfirm(true)}
             disabled={signingOut}
             className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg h-8 text-xs cursor-pointer"
             title="Sign Out"
@@ -106,6 +108,18 @@ export function TeacherNavbar({ userName }: TeacherNavbarProps) {
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showSignOutConfirm}
+        onOpenChange={setShowSignOutConfirm}
+        title="Sign out of your account?"
+        description="Are you sure you want to sign out? You will need to sign in again to access your teacher portal."
+        confirmText="Sign Out"
+        cancelText="Cancel"
+        variant="default"
+        isLoading={signingOut}
+        onConfirm={handleSignOut}
+      />
 
       {/* Mobile navigation row */}
       <div className="sm:hidden flex items-center border-t border-border px-4 py-2 gap-2 bg-secondary/40">

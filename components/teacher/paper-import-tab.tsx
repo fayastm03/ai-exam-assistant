@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { QuestionEditorDialog, QuestionData } from './question-editor-dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 import {
   Upload,
@@ -91,6 +92,8 @@ export function PaperImportTab({ examId, onImportCompleted }: PaperImportTabProp
   const [editingQuestion, setEditingQuestion] = useState<QuestionData | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setErrorMsg(null);
@@ -215,19 +218,23 @@ export function PaperImportTab({ examId, onImportCompleted }: PaperImportTabProp
     }
   };
 
-  const handleDelete = async (questionId: string) => {
-    if (!confirm('Are you sure you want to remove this extracted question?')) return;
+  const handleConfirmDelete = async () => {
+    if (!deletingQuestionId) return;
 
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/teacher/exams/${examId}/questions/${questionId}`, {
+      const res = await fetch(`/api/teacher/exams/${examId}/questions/${deletingQuestionId}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete question');
 
-      setImportedQuestions((prev) => prev.filter((q) => q.id !== questionId));
+      setImportedQuestions((prev) => prev.filter((q) => q.id !== deletingQuestionId));
       onImportCompleted();
+      setDeletingQuestionId(null);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Error deleting question');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -582,7 +589,7 @@ export function PaperImportTab({ examId, onImportCompleted }: PaperImportTabProp
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDelete(q.id)}
+                              onClick={() => setDeletingQuestionId(q.id)}
                               className="h-7 text-xs text-neutral-400 hover:text-red-600"
                             >
                               <Trash2 className="w-3 h-3 mr-1" />
@@ -651,6 +658,19 @@ export function PaperImportTab({ examId, onImportCompleted }: PaperImportTabProp
           }}
         />
       )}
+
+      {/* Remove Question Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(deletingQuestionId)}
+        onOpenChange={(open) => !open && setDeletingQuestionId(null)}
+        title="Remove Question?"
+        description="Are you sure you want to remove this extracted question from the imported list?"
+        confirmText="Remove Question"
+        cancelText="Cancel"
+        variant="destructive"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

@@ -33,6 +33,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { mapApiError, MESSAGES } from '@/lib/messages';
 
 interface ExamListItem {
@@ -70,6 +71,7 @@ export default function TeacherExamsPage() {
 
   // Delete State
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [examToDelete, setExamToDelete] = useState<{ id: string; title: string } | null>(null);
 
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -160,10 +162,9 @@ export default function TeacherExamsPage() {
     }
   };
 
-  const handleDeleteExam = async (examId: string, examTitle: string) => {
-    if (!confirm(`Are you sure you want to permanently delete "${examTitle}" and all its questions?`)) {
-      return;
-    }
+  const handleConfirmDeleteExam = async () => {
+    if (!examToDelete) return;
+    const { id: examId } = examToDelete;
 
     setDeletingId(examId);
     try {
@@ -176,6 +177,7 @@ export default function TeacherExamsPage() {
       }
       setExams((prev) => prev.filter((e) => e.id !== examId));
       toast.success(MESSAGES.success.examDeleted);
+      setExamToDelete(null);
     } catch (err: unknown) {
       toast.error(mapApiError(err, 'Failed to delete exam.').message);
     } finally {
@@ -478,9 +480,9 @@ export default function TeacherExamsPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDeleteExam(exam.id, exam.title)}
+                  onClick={() => setExamToDelete({ id: exam.id, title: exam.title })}
                   disabled={deletingId === exam.id}
-                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-9 px-2.5 rounded-lg"
+                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-9 px-2.5 rounded-lg cursor-pointer"
                   title="Delete Exam"
                 >
                   {deletingId === exam.id ? (
@@ -494,6 +496,23 @@ export default function TeacherExamsPage() {
           ))}
         </div>
       )}
+
+      {/* Delete Exam Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(examToDelete)}
+        onOpenChange={(open) => !open && setExamToDelete(null)}
+        title="Delete Exam?"
+        description={
+          examToDelete
+            ? `Are you sure you want to permanently delete "${examToDelete.title}" and all its questions? This action cannot be undone.`
+            : 'Are you sure you want to delete this exam?'
+        }
+        confirmText="Delete Exam"
+        cancelText="Cancel"
+        variant="destructive"
+        isLoading={Boolean(deletingId)}
+        onConfirm={handleConfirmDeleteExam}
+      />
     </div>
   );
 }

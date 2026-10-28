@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { GraduationCap, LogOut, BookOpen, Users, PlusCircle, Loader2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface StudentNavbarProps {
   userName: string;
@@ -16,6 +17,7 @@ interface StudentNavbarProps {
 export function StudentNavbar({ userName }: StudentNavbarProps) {
   const pathname = usePathname();
   const [signingOut, setSigningOut] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -96,7 +98,7 @@ export function StudentNavbar({ userName }: StudentNavbarProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleSignOut}
+            onClick={() => setShowSignOutConfirm(true)}
             disabled={signingOut}
             className="text-xs text-muted-foreground hover:text-foreground h-8 px-2.5 rounded-lg cursor-pointer"
           >
@@ -109,6 +111,18 @@ export function StudentNavbar({ userName }: StudentNavbarProps) {
           </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showSignOutConfirm}
+        onOpenChange={setShowSignOutConfirm}
+        title="Sign out of your account?"
+        description="Are you sure you want to sign out? You will need to sign in again to access your student portal."
+        confirmText="Sign Out"
+        cancelText="Cancel"
+        variant="default"
+        isLoading={signingOut}
+        onConfirm={handleSignOut}
+      />
     </header>
   );
 }

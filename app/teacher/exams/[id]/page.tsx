@@ -35,6 +35,7 @@ import {
   CheckCheck,
 } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { mapApiError, MESSAGES } from '@/lib/messages';
 
 interface QuestionItem {
@@ -99,6 +100,7 @@ export default function TeacherExamDetailPage({
 
   // Deleting question id state
   const [deletingQId, setDeletingQId] = useState<string | null>(null);
+  const [questionToDelete, setQuestionToDelete] = useState<{ id: string; num: number } | null>(null);
   const [reordering, setReordering] = useState(false);
   const [approvingAll, setApprovingAll] = useState(false);
 
@@ -187,8 +189,9 @@ export default function TeacherExamDetailPage({
     }
   };
 
-  const handleDeleteQuestion = async (qId: string, qNum: number) => {
-    if (!confirm(`Delete question #${qNum}? This cannot be undone.`)) return;
+  const handleConfirmDeleteQuestion = async () => {
+    if (!questionToDelete) return;
+    const { id: qId } = questionToDelete;
 
     setDeletingQId(qId);
     try {
@@ -201,6 +204,7 @@ export default function TeacherExamDetailPage({
       }
       setQuestions((prev) => prev.filter((item) => item.id !== qId));
       toast.success(MESSAGES.success.questionDeleted);
+      setQuestionToDelete(null);
     } catch (err: unknown) {
       toast.error(mapApiError(err, 'Failed to delete question.').message);
     } finally {
@@ -782,7 +786,7 @@ export default function TeacherExamDetailPage({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeleteQuestion(q.id, q.number)}
+                            onClick={() => setQuestionToDelete({ id: q.id, num: q.number })}
                             disabled={deletingQId === q.id}
                             className="h-7 w-7 p-0 text-neutral-400 hover:text-red-600"
                             title="Delete Question"
@@ -912,6 +916,23 @@ export default function TeacherExamDetailPage({
         initialQuestion={editingQuestion}
         examId={exam.id}
         onSaved={fetchExamData}
+      />
+
+      {/* Delete Question Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(questionToDelete)}
+        onOpenChange={(open) => !open && setQuestionToDelete(null)}
+        title="Delete Question?"
+        description={
+          questionToDelete
+            ? `Are you sure you want to delete question #${questionToDelete.num}? This cannot be undone.`
+            : 'Are you sure you want to delete this question?'
+        }
+        confirmText="Delete Question"
+        cancelText="Cancel"
+        variant="destructive"
+        isLoading={Boolean(deletingQId)}
+        onConfirm={handleConfirmDeleteQuestion}
       />
     </div>
   );

@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle2, AlertTriangle, AlertCircle, Send, Loader2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { mapApiError } from '@/lib/messages';
 
 interface PublishDialogProps {
@@ -26,6 +27,7 @@ export function PublishButtonWithDialog({
   onPublishedSuccess,
 }: PublishDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [confirmPublishOpen, setConfirmPublishOpen] = useState(false);
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [errorDetails, setErrorDetails] = useState<string[]>([]);
 
@@ -49,6 +51,7 @@ export function PublishButtonWithDialog({
         return;
       }
 
+      setConfirmPublishOpen(false);
       onPublishedSuccess(data.exam);
     } catch (err: unknown) {
       setErrorDetails([
@@ -80,23 +83,27 @@ export function PublishButtonWithDialog({
   return (
     <>
       <Button
-        onClick={handlePublish}
+        onClick={() => setConfirmPublishOpen(true)}
         disabled={loading}
         size="sm"
-        className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm h-9"
+        className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm h-9 cursor-pointer"
       >
-        {loading ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-            Validating...
-          </>
-        ) : (
-          <>
-            <Send className="w-4 h-4 mr-1.5" />
-            Publish Exam
-          </>
-        )}
+        <Send className="w-4 h-4 mr-1.5" />
+        Publish Exam
       </Button>
+
+      {/* Confirmation Dialog before Publishing */}
+      <ConfirmDialog
+        open={confirmPublishOpen}
+        onOpenChange={setConfirmPublishOpen}
+        title="Publish this exam?"
+        description="Publishing will validate the questions and make this exam available to enrolled students in assigned classes when the scheduled start time arrives."
+        confirmText="Yes, Publish Exam"
+        cancelText="Cancel"
+        variant="default"
+        isLoading={loading}
+        onConfirm={handlePublish}
+      />
 
       {/* Clear Publish Errors Dialog */}
       <Dialog open={errorModalOpen} onOpenChange={setErrorModalOpen}>

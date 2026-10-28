@@ -29,6 +29,7 @@ import {
   WifiOff,
 } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { mapApiError, MESSAGES } from '@/lib/messages';
 
 interface QuestionItem {
@@ -94,6 +95,15 @@ export default function StudentExamTakePage({
   // Mobile Question Palette Drawer
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
 
+  // Leave & Back Button Protection
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const allowNavigationRef = useRef(false);
+
+  const handleConfirmExit = () => {
+    allowNavigationRef.current = true;
+    router.replace('/exams');
+  };
+
   // Online/Offline & Auto-Retry Status (Edge Case 28)
   const [isOnline, setIsOnline] = useState<boolean>(
     () => (typeof window !== 'undefined' ? navigator.onLine : true)
@@ -157,6 +167,42 @@ export default function StudentExamTakePage({
     };
   }, [examId, router]);
 
+  // Trap Browser Back Button and Window Unload
+  useEffect(() => {
+    if (loading || !attempt || attempt.status !== 'in_progress') return;
+
+    // Push dummy state so browser back button triggers popstate without leaving
+    try {
+      window.history.pushState({ examTake: true }, '', window.location.href);
+    } catch {
+      // Ignore if pushState is restricted
+    }
+
+    const handlePopState = () => {
+      if (allowNavigationRef.current) return;
+      // Re-push state so user stays on page
+      try {
+        window.history.pushState({ examTake: true }, '', window.location.href);
+      } catch {}
+      setShowExitConfirm(true);
+    };
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (allowNavigationRef.current) return;
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [loading, attempt]);
+
   // Submit Exam Function (Handles Manual and Automatic Submit)
   const handleSubmitExamRef = useRef<(isAutoSubmit?: boolean) => Promise<void>>(undefined);
 
@@ -189,6 +235,7 @@ export default function StudentExamTakePage({
           }
         }
 
+        allowNavigationRef.current = true;
         router.replace(`/exams/${examId}/result`);
       } catch (err: unknown) {
         if (!isAutoSubmit) {
@@ -215,6 +262,7 @@ export default function StudentExamTakePage({
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === `exam_submitted_${examId}`) {
+        allowNavigationRef.current = true;
         router.replace(`/exams/${examId}/result`);
       }
     };
@@ -285,6 +333,7 @@ export default function StudentExamTakePage({
 
         if (data.alreadySubmitted) {
           // Exam was submitted from another tab or window
+          allowNavigationRef.current = true;
           router.replace(`/exams/${examId}/result`);
           return;
         }
@@ -455,7 +504,18 @@ export default function StudentExamTakePage({
 
       {/* Top Test Header Bar */}
       <div className="sticky top-16 z-30 bg-card/95 backdrop-blur-md border border-border rounded-lg p-3 sm:p-4 shadow-sm flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowExitConfirm(true)}
+            className="text-muted-foreground hover:text-foreground h-9 px-2 gap-1 rounded-lg text-xs shrink-0 cursor-pointer"
+            title="Leave exam"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Exit</span>
+          </Button>
+
           <div className="hidden sm:block">
             <h1 className="text-sm font-semibold text-foreground line-clamp-1">
               {exam.title}
@@ -864,6 +924,18 @@ export default function StudentExamTakePage({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation Dialog: Leave / Back from Exam */}
+      <ConfirmDialog
+        open={showExitConfirm}
+        onOpenChange={setShowExitConfirm}
+        title="Leave this exam?"
+        description="Your selected answers are saved on the server. However, your countdown timer will continue running in the background. You can return and resume any time before time runs out."
+        confirmText="Leave Exam"
+        cancelText="Stay & Continue Test"
+        variant="warning"
+        onConfirm={handleConfirmExit}
+      />
     </div>
   );
 }

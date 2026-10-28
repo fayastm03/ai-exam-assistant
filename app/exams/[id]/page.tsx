@@ -21,6 +21,7 @@ import {
   Users,
 } from 'lucide-react';
 import { mapApiError, MESSAGES } from '@/lib/messages';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface ExamData {
   id: string;
@@ -56,6 +57,7 @@ export default function ExamInstructionsPage({
   const [starting, setStarting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [membershipDeniedMsg, setMembershipDeniedMsg] = useState<string | null>(null);
+  const [confirmStartOpen, setConfirmStartOpen] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -322,7 +324,7 @@ export default function ExamInstructionsPage({
             </Button>
           ) : (
             <Button
-              onClick={handleStartExam}
+              onClick={() => setConfirmStartOpen(true)}
               disabled={starting}
               className="w-full h-10 text-base font-medium rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
             >
@@ -341,6 +343,27 @@ export default function ExamInstructionsPage({
           )}
         </CardFooter>
       </Card>
+
+      {/* Confirmation Dialog before Starting Exam */}
+      <ConfirmDialog
+        open={confirmStartOpen}
+        onOpenChange={setConfirmStartOpen}
+        title="Start this exam now?"
+        description={
+          exam ? (
+            <>
+              Once you start, your <strong>{exam.duration_min}-minute</strong> countdown timer begins immediately and cannot be paused.
+            </>
+          ) : (
+            'Once you start, your countdown timer begins immediately and cannot be paused.'
+          )
+        }
+        confirmText="Yes, Start Exam"
+        cancelText="Cancel"
+        variant="default"
+        isLoading={starting}
+        onConfirm={handleStartExam}
+      />
     </div>
   );
 }

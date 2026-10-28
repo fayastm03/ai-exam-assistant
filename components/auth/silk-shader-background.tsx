@@ -260,12 +260,16 @@ void main() {
 `;
 
 function createShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
+  if (gl.isContextLost()) return null;
   const shader = gl.createShader(type);
   if (!shader) return null;
-  gl.shaderSource(shader, source);
+  gl.shaderSource(shader, source.trim());
   gl.compileShader(shader);
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+    const info = gl.getShaderInfoLog(shader);
+    if (info) {
+      console.warn('Shader compile warning:', info);
+    }
     gl.deleteShader(shader);
     return null;
   }
@@ -285,12 +289,10 @@ export function SilkShaderBackground() {
         antialias: false,
         depth: false,
         stencil: false,
-        powerPreference: 'low-power',
       }) ||
       (canvas.getContext('experimental-webgl') as WebGLRenderingContext | null);
 
-    if (!gl) {
-      console.warn('WebGL1 not supported for silk shader background.');
+    if (!gl || gl.isContextLost()) {
       return;
     }
 
@@ -306,7 +308,10 @@ export function SilkShaderBackground() {
     gl.linkProgram(program);
 
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error('Program link error:', gl.getProgramInfoLog(program));
+      const info = gl.getProgramInfoLog(program);
+      if (info) {
+        console.warn('Program link warning:', info);
+      }
       gl.deleteProgram(program);
       return;
     }
@@ -442,12 +447,11 @@ export function SilkShaderBackground() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('resize', handleResize);
 
-      if (gl) {
+      if (gl && !gl.isContextLost()) {
         if (buffer) gl.deleteBuffer(buffer);
         if (vertexShader) gl.deleteShader(vertexShader);
         if (fragmentShader) gl.deleteShader(fragmentShader);
         if (program) gl.deleteProgram(program);
-        gl.getExtension('WEBGL_lose_context')?.loseContext();
       }
     };
   }, []);
@@ -461,3 +465,4 @@ export function SilkShaderBackground() {
     />
   );
 }
+

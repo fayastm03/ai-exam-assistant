@@ -101,6 +101,7 @@ export default function StudentExamTakePage({
 
   const handleConfirmExit = () => {
     allowNavigationRef.current = true;
+    setShowExitConfirm(false);
     router.replace('/exams');
   };
 
@@ -109,67 +110,10 @@ export default function StudentExamTakePage({
     () => (typeof window !== 'undefined' ? navigator.onLine : true)
   );
 
-  // Load Exam and Existing Attempt Session
+  // Trap Browser Back Button and Window Unload (mounts immediately to prevent back navigation while in exam)
   useEffect(() => {
-    let ignore = false;
-
-    async function loadAttempt() {
-      try {
-        const res = await fetch(`/api/student/exams/${examId}/attempt`, {
-          cache: 'no-store',
-        });
-        const data = await res.json();
-
-        if (!ignore) {
-          if (!res.ok) {
-            throw new Error(data.message || 'Failed to load exam session');
-          }
-
-          if (data.alreadySubmitted) {
-            router.replace(`/exams/${examId}/result`);
-            return;
-          }
-
-          setExam(data.exam);
-          setAttempt(data.attempt);
-          setQuestions(data.questions || []);
-          setAnswers(data.answers || {});
-
-          // Calculate server-browser clock skew: serverTime - browserTime
-          const serverTimeMs = new Date(data.serverTime).getTime();
-          const browserTimeMs = Date.now();
-          const skew = serverTimeMs - browserTimeMs;
-          setClockSkewMs(skew);
-
-          // Initial remaining calculation
-          const deadlineMs = new Date(data.attempt.deadline_at).getTime();
-          const correctedNow = browserTimeMs + skew;
-          const remSec = Math.max(0, Math.floor((deadlineMs - correctedNow) / 1000));
-          setRemainingSeconds(remSec);
-
-          setLoadError(null);
-        }
-      } catch (err: unknown) {
-        if (!ignore) {
-          setLoadError(err instanceof Error ? err.message : 'Error loading exam session');
-        }
-      } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadAttempt();
-
-    return () => {
-      ignore = true;
-    };
-  }, [examId, router]);
-
-  // Trap Browser Back Button and Window Unload
-  useEffect(() => {
-    if (loading || !attempt || attempt.status !== 'in_progress') return;
+    allowNavigationRef.current = false;
+    setShowExitConfirm(false);
 
     // Push dummy state so browser back button triggers popstate without leaving
     try {
@@ -201,7 +145,75 @@ export default function StudentExamTakePage({
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [loading, attempt]);
+  }, []);
+
+  // Load Exam and Existing Attempt Session
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadAttempt() {
+      try {
+        const res = await fetch(`/api/student/exams/${examId}/attempt`, {
+          cache: 'no-store',
+        });
+        const data = await res.json();
+
+        if (!ignore) {
+          if (!res.ok) {
+            throw new Error(data.message || 'Failed to load exam session');
+          }
+
+          if (data.alreadySubmitted) {
+            allowNavigationRef.current = true;
+            router.replace(`/exams/${examId}/result`);
+            return;
+          }
+
+          setExam(data.exam);
+          setAttempt(data.attempt);
+          setQuestions(data.questions || []);
+          setAnswers(data.answers || {});
+
+          // Calculate server-browser clock skew: serverTime - browserTime
+          const serverTimeMs = new Date(data.serverTime).getTime();
+          const browserTimeMs = Date.now();
+          const skew = serverTimeMs - browserTimeMs;
+          setClockSkewMs(skew);
+
+          // Initial remaining calculation
+          const deadlineMs = new Date(data.attempt.deadline_at).getTime();
+          const correctedNow = browserTimeMs + skew;
+          const remSec = Math.max(0, Math.floor((deadlineMs - correctedNow) / 1000));
+          setRemainingSeconds(remSec);
+
+          // If resuming an exam that already has <= 5 min or <= 1 min left,
+          // do not immediately show the popup alert on load.
+          if (remSec <= 300) {
+            warned5MinRef.current = true;
+          }
+          if (remSec <= 60) {
+            warned1MinRef.current = true;
+          }
+
+          setLoadError(null);
+        }
+      } catch (err: unknown) {
+        if (!ignore) {
+          setLoadError(err instanceof Error ? err.message : 'Error loading exam session');
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadAttempt();
+
+    return () => {
+      ignore = true;
+    };
+  }, [examId, router]);
 
   // Submit Exam Function (Handles Manual and Automatic Submit)
   const handleSubmitExamRef = useRef<(isAutoSubmit?: boolean) => Promise<void>>(undefined);
@@ -275,7 +287,7 @@ export default function StudentExamTakePage({
 
   // Authoritative Countdown Clock Loop
   useEffect(() => {
-    if (!attempt?.deadline_at || remainingSeconds === null) return;
+    if (!attempt?.deadline_at) return;
 
     const deadlineMs = new Date(attempt.deadline_at).getTime();
 
@@ -286,13 +298,13 @@ export default function StudentExamTakePage({
 
       setRemainingSeconds(remSec);
 
-      // 5-minute warning check (300 seconds)
+      // 5-minute warning check (300 seconds) - only triggers when crossing the boundary
       if (remSec <= 300 && remSec > 60 && !warned5MinRef.current) {
         warned5MinRef.current = true;
         setShow5MinWarning(true);
       }
 
-      // 1-minute warning check (60 seconds)
+      // 1-minute warning check (60 seconds) - only triggers when crossing the boundary
       if (remSec <= 60 && remSec > 0 && !warned1MinRef.current) {
         warned1MinRef.current = true;
         setShow1MinWarning(true);
@@ -306,7 +318,7 @@ export default function StudentExamTakePage({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [attempt?.deadline_at, clockSkewMs, remainingSeconds, handleSubmitExam]);
+  }, [attempt?.deadline_at, clockSkewMs, handleSubmitExam]);
 
   // Save Answer API Call with Retry Support
   const saveAnswerToServer = useCallback(
@@ -447,7 +459,14 @@ export default function StudentExamTakePage({
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{loadError || 'Unable to start exam questions.'}</AlertDescription>
         </Alert>
-        <Button onClick={() => router.push('/exams')} variant="outline" className="w-full">
+        <Button
+          onClick={() => {
+            allowNavigationRef.current = true;
+            router.push('/exams');
+          }}
+          variant="outline"
+          className="w-full"
+        >
           Return to Exam List
         </Button>
       </div>

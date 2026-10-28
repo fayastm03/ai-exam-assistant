@@ -121,10 +121,12 @@ export default function ExamInstructionsPage({
       }
 
       if (data.alreadySubmitted) {
+        setConfirmStartOpen(false);
         router.push(`/exams/${examId}/result`);
         return;
       }
 
+      setConfirmStartOpen(false);
       router.push(`/exams/${examId}/take`);
     } catch (err: unknown) {
       setErrorMsg(mapApiError(err, 'Unable to begin exam session. Please try again.').message);

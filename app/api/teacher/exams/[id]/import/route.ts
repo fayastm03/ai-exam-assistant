@@ -3,6 +3,7 @@ import { requireTeacher } from '@/lib/auth';
 import { jsonError, jsonSuccess } from '@/lib/api-response';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { extractQuestionsFromFile } from '@/lib/ai/paper-extractor';
+import { detectFileType } from '@/lib/file-magic';
 import { ExtractedQuestion } from '@/lib/validations/ai';
 
 export const maxDuration = 60;
@@ -84,6 +85,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
+
+  // Validate magic bytes to verify genuine file signature
+  const detectedType = detectFileType(buffer);
+  if (!detectedType) {
+    return jsonError('Invalid or corrupted file content. Binary signature does not match PDF, DOCX, PNG, or JPEG', 400);
+  }
 
   let extractedQuestions: ExtractedQuestion[] = [];
   let rawTextOutput = '';

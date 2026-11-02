@@ -145,10 +145,12 @@ export class GeminiProvider implements AIProvider {
           latencyMs,
         };
 
-        // Token and latency logging for every call
-        console.log(
-          `[AI:${this.name}:${this.model}] Latency: ${usage.latencyMs}ms | Tokens: prompt=${usage.promptTokens}, candidates=${usage.candidatesTokens}, total=${usage.totalTokens}`
-        );
+        // Token and latency telemetry
+        if (process.env.NODE_ENV !== 'production') {
+          console.info(
+            `[AI:${this.name}:${this.model}] Latency: ${usage.latencyMs}ms | Tokens: prompt=${usage.promptTokens}, candidates=${usage.candidatesTokens}, total=${usage.totalTokens}`
+          );
+        }
 
         return { text, usage };
       } catch (err: unknown) {

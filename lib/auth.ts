@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient as createSupabaseServerClient } from '@supabase/ssr';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import { verifyCsrfOrigin } from '@/lib/csrf';
+import { checkBodySizeLimit } from '@/lib/body-limit';
 import type { User } from '@supabase/supabase-js';
 
 export interface ProfileRecord {
@@ -30,6 +32,18 @@ export type AuthTeacherResult = AuthUserResult;
  * Authenticates the user via Bearer token or session cookie.
  */
 export async function requireAuth(request: NextRequest): Promise<AuthUserResult> {
+  // Enforce CSRF Origin verification on all state-changing requests
+  const csrfCheck = verifyCsrfOrigin(request);
+  if (!csrfCheck.ok) {
+    return { ok: false, response: csrfCheck.response };
+  }
+
+  // Enforce default body size limit
+  const bodyLimitCheck = checkBodySizeLimit(request);
+  if (!bodyLimitCheck.ok) {
+    return { ok: false, response: bodyLimitCheck.response };
+  }
+
   const serviceRole = createServiceRoleClient();
   let authUser: User | null = null;
 
@@ -112,7 +126,7 @@ export async function requireAuth(request: NextRequest): Promise<AuthUserResult>
   // 3. Fetch authoritative profile from database to verify role
   const { data: profile, error: profileError } = await serviceRole
     .from('profiles')
-    .select('*')
+    .select('id, name, role, created_at, updated_at')
     .eq('id', authUser.id)
     .single();
 

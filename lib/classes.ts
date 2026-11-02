@@ -2,6 +2,7 @@
  * Pure business logic and helper functions for Class management,
  * Join code normalisation, membership state transitions, and exam timing status.
  */
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type MembershipStatus = 'pending' | 'approved' | 'rejected' | 'removed';
 
@@ -28,8 +29,7 @@ export function generateRandomJoinCode(): string {
  * Generates a unique 6-character join code verified against the database.
  */
 export async function generateUniqueJoinCode(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase?: any
+  supabase?: SupabaseClient
 ): Promise<string> {
   let attempts = 0;
   while (attempts < 20) {

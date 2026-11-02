@@ -378,6 +378,11 @@ export function SilkShaderBackground() {
     let lastTime = performance.now();
     let isPaused = false;
 
+    // Check for user preference for reduced motion
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     // Viewport & DPR management (capped at 2)
     const updateSize = () => {
       if (!canvas) return;
@@ -396,6 +401,7 @@ export function SilkShaderBackground() {
 
     updateSize();
 
+    // Single static render for reduced motion or continuous loop for animated
     const render = (now: number) => {
       if (isPaused) return;
 
@@ -411,10 +417,20 @@ export function SilkShaderBackground() {
       }
 
       gl.drawArrays(gl.TRIANGLES, 0, 3);
-      animationFrameId = requestAnimationFrame(render);
+      if (!prefersReducedMotion) {
+        animationFrameId = requestAnimationFrame(render);
+      }
     };
 
-    animationFrameId = requestAnimationFrame(render);
+    if (prefersReducedMotion) {
+      updateSize();
+      if (uSceneLoc && canvas.width > 0 && canvas.height > 0) {
+        gl.uniform4f(uSceneLoc, canvas.width, canvas.height, 0.0, 4.0);
+      }
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    } else {
+      animationFrameId = requestAnimationFrame(render);
+    }
 
     // Pause RAF loop when tab is hidden
     const handleVisibilityChange = () => {

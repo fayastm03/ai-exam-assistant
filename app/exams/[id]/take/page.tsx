@@ -199,9 +199,6 @@ export default function StudentExamTakePage({
     document.addEventListener('paste', handlePreventCopy);
     window.addEventListener('keydown', handleKeyDown);
 
-    // Initial check
-    setIsFullscreen(Boolean(document.fullscreenElement));
-
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -216,7 +213,6 @@ export default function StudentExamTakePage({
   // Trap Browser Back Button and Window Unload (mounts immediately to prevent back navigation while in exam)
   useEffect(() => {
     allowNavigationRef.current = false;
-    setSecurityModalOpen(false);
 
     // Push dummy state so browser back button triggers popstate without leaving
     try {
@@ -322,8 +318,6 @@ export default function StudentExamTakePage({
   }, [examId, router]);
 
   // Submit Exam Function (Handles Manual and Automatic Submit)
-  const handleSubmitExamRef = useRef<(isAutoSubmit?: boolean) => Promise<void>>(undefined);
-
   const handleSubmitExam = useCallback(
     async (isAutoSubmit: boolean = false) => {
       if (isAutoSubmit) {
@@ -366,7 +360,7 @@ export default function StudentExamTakePage({
         } else {
           // If auto-submit failed on network drop, retry in 3 seconds
           setTimeout(() => {
-            handleSubmitExamRef.current?.(true);
+            handleSubmitExam(true);
           }, 3000);
         }
       }
@@ -374,9 +368,10 @@ export default function StudentExamTakePage({
     [examId, router]
   );
 
+  const handleSubmitExamRef = useRef(handleSubmitExam);
   useEffect(() => {
     handleSubmitExamRef.current = handleSubmitExam;
-  }, [handleSubmitExam]);
+  });
 
   // Synchronize submission across multiple open tabs
   useEffect(() => {

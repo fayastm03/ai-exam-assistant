@@ -148,7 +148,6 @@ export default function StudentExamResultPage({
   useEffect(() => {
     if (!data?.attempt) return;
     if (data.attempt.status !== 'submitted' && data.attempt.status !== 'auto_submitted') {
-      setAiFeedbackLoading(false);
       return;
     }
 

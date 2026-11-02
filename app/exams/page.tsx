@@ -83,8 +83,48 @@ export default function StudentExamsPage() {
   }, []);
 
   useEffect(() => {
-    fetchExams();
-  }, [fetchExams]);
+    let ignore = false;
+    (async () => {
+      try {
+        const [examsRes, classesRes] = await Promise.all([
+          fetch('/api/student/exams', { cache: 'no-store' }),
+          fetch('/api/student/classes', { cache: 'no-store' }),
+        ]);
+
+        const examsData = await examsRes.json();
+        const classesData = await classesRes.json();
+
+        if (ignore) return;
+
+        if (!examsRes.ok) {
+          throw new Error(examsData.message || 'Failed to fetch exams');
+        }
+
+        setExams(examsData.exams || []);
+
+        if (classesRes.ok && Array.isArray(classesData.classes)) {
+          const approved = classesData.classes.filter(
+            (c: { membership?: { status?: string } }) => c.membership?.status === 'approved'
+          );
+          setApprovedClassesCount(approved.length);
+        } else {
+          setApprovedClassesCount(0);
+        }
+      } catch (err: unknown) {
+        if (!ignore) {
+          setErrorMsg(mapApiError(err, 'Failed to load exams. Please try again.').message);
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const now = new Date();
 

@@ -1,49 +1,45 @@
-'use client';
+import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { connection } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { Loader2 } from 'lucide-react';
+export const instant = false;
 
-export default function HomePage() {
-  const router = useRouter();
+export default async function HomePage() {
+  await connection();
+  const cookieStore = await cookies();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
-  useEffect(() => {
-    async function checkAuth() {
-      try {
-        const supabase = createClient();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+  const client = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+    },
+  });
 
-        if (!session?.user) {
-          router.replace('/login');
-          return;
-        }
+  const {
+    data: { user },
+  } = await client.auth.getUser();
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
+  if (!user) {
+    redirect('/login');
+  }
 
-        if (profile?.role === 'teacher') {
-          router.replace('/teacher/exams');
-        } else {
-          router.replace('/exams');
-        }
-      } catch {
-        router.replace('/login');
-      }
-    }
+  const serviceRole = createServiceRoleClient();
+  const { data: profile } = await serviceRole
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
 
-    checkAuth();
-  }, [router]);
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-50 dark:bg-neutral-950 gap-2">
-      <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-      <span className="text-xs text-neutral-400">Loading...</span>
-    </div>
-  );
+  if (profile?.role === 'teacher') {
+    redirect('/teacher/exams');
+  } else {
+    redirect('/exams');
+  }
 }

@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getSafeRedirectUrl } from '@/lib/safe-redirect';
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -79,7 +80,7 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // 3. User is logged in and confirmed. Get role from profiles table:
+  // 3. User is logged in and confirmed. Get role strictly from profiles table (never metadata)
   let role = 'student';
   const { data: profile } = await supabase
     .from('profiles')
@@ -89,8 +90,6 @@ export async function proxy(request: NextRequest) {
 
   if (profile?.role) {
     role = profile.role;
-  } else if (user.user_metadata?.role) {
-    role = user.user_metadata.role;
   }
 
   // Handle root route
@@ -102,14 +101,15 @@ export async function proxy(request: NextRequest) {
 
   // Redirect logged-in users away from /login or /signup
   if (pathname === '/login' || pathname === '/signup') {
-    const next = request.nextUrl.searchParams.get('next');
-    if (next && next.startsWith('/') && !next.startsWith('//')) {
-      const isTeacherTarget = next.startsWith('/teacher');
+    const rawNext = request.nextUrl.searchParams.get('next');
+    if (rawNext) {
+      const safeNext = getSafeRedirectUrl(rawNext, role === 'teacher' ? '/teacher/exams' : '/exams');
+      const isTeacherTarget = safeNext.startsWith('/teacher');
       if (role === 'teacher' && isTeacherTarget) {
-        return NextResponse.redirect(new URL(next, request.url));
+        return NextResponse.redirect(new URL(safeNext, request.url));
       }
       if (role === 'student' && !isTeacherTarget) {
-        return NextResponse.redirect(new URL(next, request.url));
+        return NextResponse.redirect(new URL(safeNext, request.url));
       }
     }
     const url = request.nextUrl.clone();

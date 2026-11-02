@@ -48,16 +48,16 @@ export default function ResetPasswordPage() {
       }
     });
 
-    // 2. Check active session immediately
+    // 2. Check active authenticated user immediately
     async function verifyAuth() {
       try {
         const {
-          data: { session },
-        } = await supabase.auth.getSession();
+          data: { user },
+        } = await supabase.auth.getUser();
 
         if (!mounted) return;
 
-        if (session) {
+        if (user) {
           setHasSession(true);
           setCheckingSession(false);
           return;
@@ -68,9 +68,9 @@ export default function ResetPasswordPage() {
           setTimeout(async () => {
             if (!mounted) return;
             const {
-              data: { session: retrySession },
-            } = await supabase.auth.getSession();
-            if (retrySession) {
+              data: { user: retryUser },
+            } = await supabase.auth.getUser();
+            if (retryUser) {
               setHasSession(true);
             } else {
               setHasSession(false);

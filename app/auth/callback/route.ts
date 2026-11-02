@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import { getSafeRedirectUrl } from '@/lib/safe-redirect';
 import type { EmailOtpType } from '@supabase/supabase-js';
 
 /**
@@ -129,12 +130,14 @@ export async function GET(request: NextRequest) {
   }
 
   // 4. Handle recovery / reset-password destination
-  if (next && next.startsWith('/') && !next.startsWith('//')) {
-    if (userId) {
-      return createRedirect(next);
+  if (next) {
+    const safeNext = getSafeRedirectUrl(next, '/login');
+    if (safeNext !== '/login') {
+      if (userId) {
+        return createRedirect(safeNext);
+      }
+      return createRedirect('/login?error=confirmation_failed');
     }
-    // If code exchange failed for reset password, redirect to login with confirmation_failed error
-    return createRedirect('/login?error=confirmation_failed');
   }
 
   // 5. Handle authenticated user redirect (e.g. signup email confirmation)
